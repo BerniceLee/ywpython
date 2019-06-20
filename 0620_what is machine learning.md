@@ -49,7 +49,7 @@
 	- 스팸메일 거르기
 	
 ![spam mail1](https://tensorflowkorea.files.wordpress.com/2018/05/e18489e185b3e1848fe185b3e18485e185b5e186abe18489e185a3e186ba-2018-05-23-e1848be185a9e18492e185ae-11-57-23.png?w=768)
-![spam mail2](https://tensorflowkorea.files.wordpress.com/2018/05/e18489e185b3e1848fe185b3e18485e185b5e186abe18489e185a3e186ba-2018-05-24-e1848be185a9e1848ce185a5e186ab-12-01-09.png?w=768)
+![spam mail2](https://tensorflowkorea.files.wordpress.com/2018/05/e18489e185b3e1848fe185b3e18485e185b5e186abe18489e185a3e186ba-2018-05-24-e1848be185a 9e1848ce185a5e186ab-12-01-09.png?w=768)
 
 
 	* 스팸 필터의 경우, 많은 메일 샘플과 소속 정보(스팸인지 아닌지)로 훈련되어야 한다.
@@ -65,14 +65,14 @@
 		* k-평균 k-Means
 		* 계층 군집 분석 Hierarchical Cluster Analysis (HCA)
 		* 기댓값 최대화 Expectation Maximization
-	* 시각화visualization와 차원 축소dimensionality reduction
-		* 주성분 분석Principal Component Analysis (PCA)
-		* 커널kernel PCA
-		* 지역적 선형 임베딩Locally-Linear Embedding (LLE)
-		* t-SNEt-distributed Stochastic Neighbor Embedding
-	* 연관 규칙 학습Association rule learning
-		* 어프라이어리Apriori
-		* 이클렛Eclat
+	* 시각화 visualization와 차원 축소 dimensionality reduction
+		* 주성분 분석 Principal Component Analysis (PCA)
+		* 커널 kernel PCA
+		* 지역적 선형 임베딩 Locally-Linear Embedding (LLE)
+		* t-SNE t-distributed Stochastic Neighbor Embedding
+	* 연관 규칙 학습 Association rule learning
+		* 어프라이어리 Apriori
+		* 이클렛 Eclat
 		
 		
 **Semi-supervised learning**
@@ -189,7 +189,7 @@ print(d.T)
 (참조 URL : https://wikidocs.net/22384)
 
 
-1. 내적, 내적의 연산
+- 내적, 내적의 연산
 
 	- a⃗ ⋅b⃗ =|a⃗ ||b⃗ |cosθ
 	- 벡터에는 방향이 있으므로, 방향이 일치하는 만큼만 곱한다
@@ -224,8 +224,8 @@ print(b.dot(c))
 	- x,y  두 개의 독립 변수를 가지는 함수  f(x,y) 의 편미분 도함수는 다음과 같이 표기한다.
 
 
-	- fx(x,y)=∂f∂x(4.2.18)
-	- fy(x,y)=∂f∂y(4.2.19)
+	- fx(x,y)=∂f∂x
+	- fy(x,y)=∂f∂y
 	
 	
 	- 예제 코드를 통해서 한번 알아보자
@@ -342,3 +342,366 @@ print(A.dot(I))
 ![linear map](https://t1.daumcdn.net/cfile/tistory/2113A43C56ED62C101)
 
 
+##### 지수함수
+
+	- 예제를 통해서 알아보자
+	
+```python
+# 지수함수
+
+%matplotlib inline
+
+x = np.linspace(-4, 4, 100)
+y = 2**x
+y2 = 3**x
+y3 = 0.5**x
+
+plt.figure(figsize=(5,5))
+plt.plot(x,y, 'black', linewidth=3, label='$y=2^x$')
+plt.plot(x,y2, 'cornflowerblue', linewidth=3, label='$y=3^x$')
+plt.plot(x,y3, 'darkred', linewidth=3, label='$y=0.5^x$')
+plt.ylim(-2,6)
+plt.xlim(-4,4)
+plt.grid(True)
+plt.legend(loc='lower right')
+plt.show()
+```
+
+	- 지수함수 에서는 절대 0 값이 나오지 않는다.
+	
+##### 로그함수
+
+	- 지수함수의 역함수
+	- 역시 예제를 통해 살펴보자
+	
+```python
+# 로그함수
+
+x = np.linspace(-8, 8, 100)
+y = 2**x
+
+x2 = np.linspace(0.001, 8, 100)
+y2 = np.log(x2) / np.log(2)
+
+plt.figure(figsize=(5,5))
+plt.plot(x,y, 'black', linewidth=3)
+plt.plot(x2,y2, 'cornflowerblue', linewidth=3)
+plt.plot(x,x, 'black', linestyle='--', linewidth=1)
+plt.ylim(-8,8)
+plt.xlim(-8,8)
+plt.grid(True)
+plt.show()
+```
+
+	- 로그는 너무 크거나 작은 수를 다루기 쉬운 크기로 적당히 normalize 해줌
+	- 너무 크거나 작은 수는 overflow 를 발생시키는데, 이럴때 로그를 써주면 됨
+	
+	- 다음 예제 코드를 통해서 다른 특징을 살펴보자
+	
+```python
+# 로그함수를 활용한 최대,최소값 찾기
+
+x = np.linspace(-4 ,4, 100)
+y = (x-1)**2 + 2
+logy = np.log(y)
+
+plt.figure(figsize=(4,4))
+plt.plot(x,y, 'black', linewidth=3)
+plt.plot(x,logy, 'darkred', linewidth=3)
+plt.yticks(range(-4,9,1))
+plt.xticks(range(-4,9,1))
+plt.ylim(-4,8)
+plt.xlim(-4,4)
+plt.grid(True)
+plt.show()
+```
+
+	- 함수 f(x)가 있고, f(x)를 최소화하는 X*를 구하고 싶은 경우가 많을거다
+	- 이때 로그를 취한 logf(x)도 x=x* 일때 최소화됨
+	- 로그는 단조 증가함수 : 최대/최솟값은 바뀔 수 있지만, 최대/최솟값을 취하는 값은 변하지 않음
+		- 이 성질을 이용해서, logf(x)로 최대최소 구하는 지점을 찾고, 그걸 f(x)에 대입하는 형식으로도 응용 가능
+	
+	
+##### 지수함수의 미분
+
+
+	- 일단 예제코드를 통해 살펴보자
+	
+```python
+# 지수함수의 미분
+
+x = np.linspace(-4,4,100)
+a = 2
+y = a**x
+dy = np.log(a) * y
+
+plt.figure(figsize=(4,4))
+plt.plot(x,y, 'grey', linestyle='--', linewidth=3)
+plt.plot(x,dy, 'red', linewidth=3)
+plt.ylim(-1,8)
+plt.xlim(-4,4)
+plt.grid(True)
+plt.show()
+```
+
+	- 미분을 해도 형 자체가 크게 변하지 않는다
+	- 특이한점은, 지수 밑이 e(오일러)인 경우, loge=1 가 되서 미분해도 변하지 않는다.
+		- 이건 미분 계산할때 매우 편리함
+		- e를 밑으로 한 지수함수를 다양한 데서 사용 (오늘도 몇개 나올거임)
+		
+
+##### 로그함수의 미분
+
+
+	- 이것도 예제코드를 통해서...
+	
+```python
+# 로그함수의 미분
+
+x = np.linspace(0.0001,4,100)
+y = np.log(x)
+dy = 1/x
+
+plt.figure(figsize=(4,4))
+plt.plot(x,y, 'grey', linestyle='--', linewidth=3)
+plt.plot(x,dy, 'red', linewidth=3)
+plt.ylim(-8,8)
+plt.xlim(-4,4)
+plt.grid(True)
+plt.show()
+```
+
+	- 로그함수의 미분은 반비례 식이 된다.
+	
+
+
+### 활성화 함수
+
+
+
+	- 딥러닝 네트워크에서는 노드에 들어오는 값들에 대해, 곧바로 다음 레이어로 전달하지 않고 
+	- 주로 비선형 함수를 통과시킨 후 전달한다.
+	- 이때 사용하는 함수를 "활성화 함수(Activation Function)"이라 한다.
+	- 아래에서 딥러닝에 사용하는 활성화 함수들과 예제를 살펴보자.
+
+
+##### 시그모이드 함수
+
+
+![sigmoid function](https://mlnotebook.github.io/img/transferFunctions/sigmoid.png)
+
+	- Logistic 함수라고 부르기도 한다
+	- 식은 아래와 같이 나타낸다
+	
+	- σ(x)= 1 / 1+e−x
+	- σ′(x) = σ(x)(1−σ(x))
+	
+```python
+# 시그모이드 함수
+
+x = np.linspace(-10, 10, 100)
+y = 1 / (1 + np.exp(-x))
+
+plt.figure(figsize=(4,4))
+plt.plot(x,y, 'blue', linewidth=3)
+
+plt.ylim(-1,2)
+plt.xlim(-10,10)
+plt.grid(True)
+plt.show()
+```
+
+	- 우선 함수값이 (0, 1)로 제한된다.
+	- 중간 값은 1/2이다.
+	- 매우 큰 값을 가지면 함수값은 거의 1이며, 매우 작은 값을 가지면 거의 0이다.
+	
+	
+##### 소프트맥스 함수
+
+
+	- 확률을 계산할때 사용하는 함수가 소프트맥스 함수
+	- 따라서 출력 벡터는 원소의 합이 1인 확률함수가 된다.
+		- 이때 벡터의 각 원소를 정규화 하기위해 소프트맥스 함수는 입력값을 모두 지수 값으로 바꿔주게 됨
+		
+	- 우선 예제코드를 통해 살펴보자
+	
+```python
+# 소프트맥스 함수
+
+# 입력받은 값을 출력으로 0~1 사이의 값으로 모두 정규화하여
+# 출력 값들의 종합은 항상 1이 되는 특성을 가진 함수
+def softmax(x0, x1, x2) : 
+    u = np.exp(x0) + np.exp(x1) + np.exp(x2)
+    return np.exp(x0) / u, np.exp(x1) / u, np.exp(x2) / u
+
+# test
+y = softmax(2,1,-1)
+print(np.round(y,2)) # (A) 소수점 2자리로 최대한 가깝게 표시
+print(np.sum(y)) # (B) 합계 표시
+```
+
+```python
+# 소프트맥스 함수
+
+from mpl_toolkits.mplot3d import Axes3D
+
+xn = 20
+x0 = np.linspace(-4,4,xn)
+x1 = np.linspace(-4,4,xn)
+
+y = np.zeros((xn, xn, 3))
+for i0 in range(xn) :
+    for i1 in range(xn) :b
+        y[i1,i0, :] = softmax(x0[i0], x1[i1], 1)
+
+# meshgrid 함수 : 2개 1차원 배열을 받아 가능한 모든 (x,y) 짝을 만들 수 있는
+# 2차워 배열을 2개 반환
+xx0, xx1 = np.meshgrid(x0, x1)
+plt.figure(figsize=(8,3))
+for i in range(2) :
+    ax = plt.subplot(1,2, i+1, projection='3d')
+    ax.plot_surface(xx0, xx1, y[:, :, i],
+                   rstride=1, cstride=1, alpha=.3, color='blue', edgecolor='black')
+    ax.set_xlabel('$x_0', fontsize=14)
+    ax.set_xlabel('$x_1', fontsize=14)
+    ax.view_init(40, -125)
+    
+plt.show()
+```
+	
+	- 코드속 softmax() : 입력받은 값을 출력으로 0~1 사이의 값으로 모두 정규화하여
+	- 출력 값들의 종합은 항상 1이 되는 특성을 가진 함수
+	
+	- x2를 1로 고정하여, x0과 x1을 움직이면 y0, y1은 0~1 사이 값으로 변화한다.
+	- 즉, x0이 커지면 y0은 1에 가까워지고, x1이 커지면 y1이 1에 가까워진다.
+	
+> 시그모이드 함수와 소프트맥스 함수는 서로 연관되어있다!
+
+(참고 URL : https://feel0804.tistory.com/6)
+
+	-  시그모이드 함수를 다변수로 확장한 것이 소프트맥스 함수
+	
+	
+##### 가우스 함수
+
+
+	- 흔히 보이는 좌우대칭 분포형 함수를 말함
+	
+![gaussian function](https://t1.daumcdn.net/cfile/tistory/990FA8465C87D60613)
+
+	- 가우스 함수의 형태는 아래와 같다
+	
+	- f(x) = ae − −(x−b)^2 / 2c^2
+	
+	- 특히 이 함수들 중에서, f(x) = 12πσ2√e−(x−μ)22σ2 꼴로 생긴 함수를 정규분포 함수라고함
+		- 깃에서는 공식이 잘 안보일텐데, 가우스 함수의 형태에서 파생된 것이라고 볼 수 있겠음
+		
+	- (참고 URL : https://datascienceschool.net/view-notebook/76acc92d28354e86940001f9fe85c50f/)
+		
+		
+```python
+# 가우스 함수
+
+def gauss(mu, sigma, a) :
+    return a * np.exp(-(x - mu)**2 / sigma**2)
+
+x = np.linspace(-4,4,100)
+plt.figure(figsize=(4,4))
+plt.plot(x, gauss(0, 1, 1), 'black', linewidth=3)
+plt.plot(x, gauss(2, 3, 0.5), 'blue', linewidth=3)
+plt.ylim(-.5, 1.5)
+plt.xlim(-4, 4)
+plt.grid(True)
+plt.show()
+```
+
+**2차원 가우스 함수**
+
+(참고 URL : https://datascienceschool.net/view-notebook/178adb41ee8141da83f1ba467e454ee2/)
+	
+	- 다차원 가우시안 분포의 개요를 볼 수 있다
+	- 가우시안 분포의 차수가 올라갈 때, 표현형식이나 함수가 어떤식으로 변화되는지 살펴보자.
+	
+```python
+# 2차원 가우스 함수
+
+%matplotlib inline
+
+# 가우스 함수
+def gauss(x, mu, sigma) :
+    N, D = x.shape
+    c1 = 1 / (2 * np.pi)**(D / 2)
+    c2 = 1 / (np.linalg.det(sigma)**(1 / 2))
+    inv_sigma = np.linalg.inv(sigma)
+    c3 = x - mu
+    c4 = np.dot(c3, inv_sigma)
+    c5 = np.zeros(N)
+    
+    for d in range(D) :
+        c5 = c5 + c4[:, d] * c3[:, d]
+    
+    p = c1 * c2 * np.exp(-c5 / 2)
+    return p
+    
+x = np.array([[1,2], [2,1], [3,4]]) # x는 Nx2인 행렬
+mu = np.array([1,2]) # 크기가 2인 벡터
+sigma = np.array([[1,0], [0,1]]) # 2x2 행렬
+print(gauss(x, mu, sigma))
+```
+
+	- 여기까지 하면 리턴값 p 가 [0.15915494 0.05854983 0.00291502] 이런식으로 출력된다.
+	
+```python
+X_range0=[-3,3]
+X_range1=[-3,3]
+
+# 등고선 표시 --------------------------
+def show_contour_gauss(mu, sig) :
+    xn = 40
+    x0 = np.linspace(X_range0[0], X_range0[1], xn)
+    x1 = np.linspace(X_range1[0], X_range1[1], xn)
+    xx0, xx1 = np.meshgrid(x0, x1)
+    x = np.c_[np.reshape(xx0, xn * xn, 1),
+             np.reshape(xx1, xn * xn, 1)]
+    f = gauss(x, mu, sig)
+    f = f.reshape(xn, xn)
+    f = f.T
+    cont = plt.contour(xx0, xx1, f, 15, colors='k')
+    plt.grid(True)
+
+# 3D 표시 ------------------------------
+def show3d_gauss(ax, mu, sig) :
+    xn = 40 # 등고선 표시 해상도
+    x0 = np.linspace(X_range0[0], X_range0[1], xn)
+    x1 = np.linspace(X_range1[0], X_range1[1], xn)
+    xx0, xx1 = np.meshgrid(x0, x1)
+    x = np.c_[np.reshape(xx0, xn * xn, 1),
+             np.reshape(xx1, xn * xn, 1)]
+    f = gauss(x, mu, sigma)
+    f = f.reshape(xn, xn)
+    f = f.T
+    ax.plot_surface(xx0, xx1, f,
+                   rstride=2, cstride=2, alpha=0.3, color='blue', edgecolor='black')
+    
+# 메인 ---------------------------------
+mu = np.array([1, 0.5]) # (A)
+sigma = np.array([[2, 1], [1, 1]]) # (B)
+Fig = plt.figure(1, figsize=(7,3))
+Fig.add_subplot(1, 2, 1)
+show_contour_gauss(mu, sigma)
+plt.xlim(X_range0)
+plt.ylim(X_range1)
+plt.xlabel('$x_0$', fontsize=14)
+plt.ylabel('$x_1$', fontsize=14)
+
+Ax = Fig.add_subplot(1, 2, 2, projection='3d')
+show3d_gauss(Ax, mu, sigma)
+Ax.set_zticks([0.05, 0.10])
+Ax.set_xlabel('$x_0$', fontsize=14)
+Ax.set_ylabel('$x_1$', fontsize=14)
+Ax.view_init(40, -100)
+plt.show()
+```
+
+	- 일반적인 2차원 가우스함수의 3D 출력형태를 볼 수 있다
+		- 오늘자 ipynb 파일 참조
