@@ -9,7 +9,7 @@
 	- 물음표에는 세모와 동그라미 중에는 어떤게 들어갈까?, 'A
 	- 단순히 물음표 주변에 세모가 가까워서 세모라고 판단하는것이 옳은 판단일까?
 	
-![kNN2](https://t1.daumcdn.net/cfile/tistory/994A35335A1661A626]
+![kNN2](https://t1.daumcdn.net/cfile/tistory/994A35335A1661A626)
 
 	- 이렇게 보면 파란 동그라미를 넣는게 뭔가 부적절하다고 느껴질것이다.
 
@@ -259,5 +259,87 @@ classifyPerson()
       
    - 이런 형식의 최종 예측값을 얻을 수 있다.
    
-   
  
+ ### Decision Tree
+ 
+ 
+ ##### Decision Tree 란?
+ 
+	- 분류와 회귀 문제에 널리 사용함
+	- 각 변수들의 속성에 따라 구분 선을 긋고, 기준선에 미달이면 결과1, 이상이면 결과2, 이런식으로 구분함
+	
+	- 스무고개와 비슷하다.
+	
+![decision tree1](https://tensorflowkorea.files.wordpress.com/2017/06/2-22.png?w=768&h=546)
+
+	- 맨 처음이 뿌리 노드, 가지들을 지나 맨 마지막 (leaf) 까지 도달한다.
+	- 실제로 결정트리를 만들때, 어떤 데이터 셋에 두 개의 변수가 있다고 가정하면
+	
+![decision tree2](https://tensorflowkorea.files.wordpress.com/2017/06/2-23.png?w=768)
+
+	- 이걸 특정한 기준선으로 나누면
+	
+![decision tree3](https://tensorflowkorea.files.wordpress.com/2017/06/2-24.png?w=768)
+
+	- 기준선을 긋는 단계(깊이) 가 깊어지면
+	
+![decision tree4](https://tensorflowkorea.files.wordpress.com/2017/06/2-25.png?w=768)
+
+	- 이런 식으로 깊이가 깊어지면서 세밀하게 분류가 가능함.
+	
+
+> 아니 그럼 대체 분류선은 어떻게 그어야 하는건가?
+
+	- 꽃잎으로 꽃을 판단해주는 decision tree 가 있다고 해보자.
+	
+![decision tree_leafs](https://t1.daumcdn.net/cfile/tistory/99CDA3345B580E0320)
+
+	- 분류를 했을 때, 순종인지 잡종인지 구분을 우선 해준다.
+		- 즉, 잘 분류한건지 잘못 분류한건지 체크한다.
+		
+	- 이 작업을 눈대중으로 할 순 없으니, 엔트로피를 계산하다.
+	
+**엔트로피란?**
+
+(참고 URL : https://ko.wikipedia.org/wiki/%EC%97%94%ED%8A%B8%EB%A1%9C%ED%94%BC)
+
+	- 통계학에선 엔트로피의 차, 절대적 값을 정의할 수 있다.
+	- 어떤 자료의 혼잡도 등을 체크하고자 할 때 쓴다.
+	- 확률적 상태 분포를 가지는 어떤 계의 앙상블을 생각하자. 
+		- 여기서 단일계의 상태(미시적 상태) {\displaystyle i} i의 확률을 {\displaystyle p_{i}} p_i라고 하자. 이 경우, 앙상블의 엔트로피 S는 다음과 같이 정의한다.
+		
+![entrophy](https://wikimedia.org/api/rest_v1/media/math/render/svg/45a5b959edf49a7de8f2965318b11c3c4b7b38b1)
+
+	
+	- 보통 0~1 사이의 값을 가짐
+	- 이 공식을 사용하여 순종성(엔트로프)의 변화를 계산하려면,
+	- 엔트로피1 (쪼개기 전), 엔트로피2 (쪼갠 후)의 차이를 구해야한다.
+		
+> InfoGain(F) = Entrophy(S1) - Entrophy(S2)
+
+	- 그런데, 여러번 선을 그으며 분할하기 때문에, 분할할때마다 엔트로피에 가중치를 부여해야 한다.
+	
+
+**Information Gain**
+
+	- 데이터를 분할하기 전(상위)과 분할 후(하위)의 변화
+	
+	- "어떤 속성으로 데이터를 분할할 때 가장 높은 정보 이득을 취할 수 있을까?"
+	- 정보 이득이 가장 높은 속성을 가지고 분할하는 것이 가장 좋은 선택
+	
+	- 그런데, information Gain은 outcome이 많으면 bias 되는 문제가 있다.
+		- 즉, 많은 측정 값을 가진  속성으로 편향된다.
+
+**Gini Impurity**
+
+	- 위의 Information Gain 말고도 지니계수를 쓰기도 함.
+	- CART 알고리즘에서 cost func 구할때도 함
+	
+어쨌든, Entrophy를 이용한 Information Gain 과 Gini Impurity 둘다 쓰는데,
+
+	- Information Gain : 엔트로피가 로그 연산이라 조금 느리다. 하지만 좀 더 balanced 된 트리 생성 가능
+	- Gini Impurity : 연산 속도가 좀 더 빠르지만, 확 나눠버리는 특성이 있음.
+	
+
+**규제 매개변수(
+	
