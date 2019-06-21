@@ -308,14 +308,14 @@ classifyPerson()
 	- 확률적 상태 분포를 가지는 어떤 계의 앙상블을 생각하자. 
 		- 여기서 단일계의 상태(미시적 상태) {\displaystyle i} i의 확률을 {\displaystyle p_{i}} p_i라고 하자. 이 경우, 앙상블의 엔트로피 S는 다음과 같이 정의한다.
 		
-![entrophy](https://wikimedia.org/api/rest_v1/media/math/render/svg/45a5b959edf49a7de8f2965318b11c3c4b7b38b1)
+![entropy](https://wikimedia.org/api/rest_v1/media/math/render/svg/45a5b959edf49a7de8f2965318b11c3c4b7b38b1)
 
 	
 	- 보통 0~1 사이의 값을 가짐
 	- 이 공식을 사용하여 순종성(엔트로프)의 변화를 계산하려면,
 	- 엔트로피1 (쪼개기 전), 엔트로피2 (쪼갠 후)의 차이를 구해야한다.
 		
-> InfoGain(F) = Entrophy(S1) - Entrophy(S2)
+> InfoGain(F) = Entropy(S1) - Entropy(S2)
 
 	- 그런데, 여러번 선을 그으며 분할하기 때문에, 분할할때마다 엔트로피에 가중치를 부여해야 한다.
 	
@@ -341,5 +341,471 @@ classifyPerson()
 	- Gini Impurity : 연산 속도가 좀 더 빠르지만, 확 나눠버리는 특성이 있음.
 	
 
-**규제 매개변수(
+##### Decision Tree 예제코드1
+
+	- 바다에서 얻을 수 있는 다섯 종류의 동물이 지표면에 닿지 않고 살아남을 수 있는지, 지느러미는 있는지 묻는 내용
+	- 이 동물들은 두 가지 항목으로 분류 (물고기다/아니다)
+	- No surfacing 으로 분류할지 filppers로 분류할지
+	
+	
+```python
+from math import log
+import operator
+
+def createDataSet() :
+    dataSet = [[1, 1, 'yes'],
+              [1, 1, 'yes'],
+               [1, 0, 'no'],
+               [0, 1, 'no'],
+               [0, 1, 'no']]
+    labels = ['no surfacing', 'flippers']
+    return dataSet, labels
+
+def calcShannonEnt(dataSet) :
+    numEntries = len(dataSet)
+    labelCounts = {}
+    
+    for featVec in dataSet :
+        currentLabel = featVec[-1] # 맨 끝의 값을 현재라벨로 정의
+        if currentLabel not in labelCounts.keys() :
+            labelCounts[currentLabel] = 0
+        labelCounts[currentLabel] += 1
+    shannonEnt = 0.0
+    
+    for key in labelCounts : # labelCounts = {'yes':2, 'no':3}
+        prob = float(labelCounts[key]) / numEntries
+        shannonEnt -= prob * log(prob, 2) # 엔트리피 구하는 공식으로 엔트리피 산출
+    return shannonEnt
+
+myDat, labels = createDataSet()
+calcShannonEnt(myDat)
+```
+
+	- 0.9709505944546686 라는 엔트리피 값을 얻음
+	
+```python
+myDat[0][-1] = 'maybe'
+calcShannonEnt(myDat)
+```
+	
+	- maybe 라는 값을 넣고 계산하면 1.3709505944546687 엔트리피 값이 나옴
+	
+	- 엔트리피를 계산했으면, 데이터 셋을 분해해보자.
+		- 여러 속성 중, 정보 이득이 가장 큰 속성을 가지고 데이터셋 분할
+		- 분류 알고리즘을 작동하려면?
+			- 엔트로피를 측정하고 데이터셋을 분할하고,
+			- 분할된 셋의 분할된 셋의 엔트로피를 측정하고
+			- 분할이 올바르게 되엇는지 확인해야함
+		- 데이터셋 분할에 가장 좋은 속성을 결정하려면, 모든 속성을 가지고 엔트로피를 구해봐야함
+		
+```python
+# 데이터셋 분할
+
+def splitDataSet(dataSet, axis, value) : 
+    retDataSet = []
+    for featVec in dataSet :
+        if featVec[axis] == value :
+            reduceFeatVec = featVec[:axis] # 값 분류로 쓰여진 축은 제외시킨다
+            reduceFeatVec.extend(featVec[axis+1:])
+            retDataSet.append(reduceFeatVec)
+    return retDataSet
+
+splitDataSet(myDat, 0, 0)
+```
+
+	- splitDataSet(myDat, 0, 0) : [[1, 'no'], [1, 'no']]
+	- splitDataSet(myDat, 0, 1) : [[1, 'maybe'], [1, 'yes'], [0, 'no']]
+	- splitDataSet(myDat, 1, 0) : [[1, 'no']]
+	
+	- 엔트로피를 구하기 위해 데이터셋을 미리 축에 따라 쪼개준다.
+	- 이 기능을 하는 함수를 미리 구현한 것.
+	
+	- 데이터 분할 기능이 생겼으면, 분할할 때 가장 좋은 속성을 선택해보자.
+	
+	
+```python
+# 데이터셋 분할시 가장 좋은 속성 선택하기
+
+def chooseBestFeatureToSplit(dataSet) :
+    numFeatures = len(dataSet[0]) - 1 # 맨 마지막 열은 라벨을 위해 쓸거라서 하나 뺀다.
+    baseEntropy = calcShannonEnt(dataSet)
+    bestInfoGain = 0.0
+    bestFeature = -1
+    
+    for i in range(numFeatures) :  
+        featList = [example[i] for example in dataSet] # 모든 예에 대한 list 생성
+        uniqueVals = set(featList) # 리스트에 대한 집합 생성
+        newEntropy = 0.0
+        
+        for value in uniqueVals :
+            subDataSet = splitDataSet(dataSet, i, value) # value 값을 집합 원소에 따라 서브 셋에 분류해서 넣고,
+            prob = len(subDataSet) / float(len(dataSet))
+            newEntropy += prob * calcShannonEnt(subDataSet)
+        InfoGain = baseEntropy - newEntropy # 상위 엔트로피에서 하위 엔트로피를 빼서 InfoGain 얻기
+        
+        if (InfoGain > bestInfoGain) :
+            bestInfoGain = InfoGain # 얻어진 InfoGain 을 best 값과 비교하며, 더 나으면 계속 대체함
+            bestFeature = i
+            
+    return bestFeature
+
+chooseBestFeatureToSplit(myDat)
+```
+
+	- bestEntropy 는 0으로 나온다. (값을 변화시키면 엔트로피도 바뀜)
+	
+	- bestEntropy 도 구했으면, 재귀적으로 결정 트리를 만들어본다.
+		- 여기서, 제시한 알고리즘이 더이상 분할할 속성이 없거나, 하나의 가지에 있는 모든 사례가 전부 같은 분류 항목일때 멈추게 해야한다.
+		- 여기선 속성을 다 썼는지, 어떤지를 확인하기 위해 데이터셋에 있는 컬럼을 간단하게 셈
+		- 만약에 데이터셋에 있는 속성을 다 썼는데도 분류 항목의 표시 개수가 같지 않으면,
+			- leaf node를 불러야 할지를 결정해야함
+		- 이 때 다수결(majority vote)을 사용한다.
+		- majorityCnt 함수는 분류 항목명의 목록을 가져와서 classList 내에 유일한 key값이 되도록 딕셔너리 생성
+		- 이 딕셔너리의 대상은 classList에서 각각의 분류 항목에 대한 발생 빈도이다.
+		- 마지막으로, 딕셔너리를 정렬하고 발생 빈도가 가장 큰 분류 항목을 반환해준다.
+		
+		
+```python
+# 분류 항목의 목록을 가져옴
+
+def majorityCnt(classList) :
+    classCount = {}
+    for vote in classList :
+        if vote not in classCount.keys() :
+            classCount[vote] += 1
+    sortedClassCount = sorted(classCount.iteritems(), key=operator.itemgetter(1), reverse=True)
+    return sortedClassCount[0][0]
+```
+
+```python
+# 재귀적으로 트리 생성
+
+def createTree(dataSet, labels) : 
+    classList = [example[-1] for example in dataSet]
+    if classList.count(classList[0])== len(classList) : 
+        return classList[0] # 첫번째 멈춤 조건 : 모든 분류 항목이 같을 때 멈춘다.
+    if len(dataSet[0]) == 1 :
+        return majorityCnt(classList) # 두번째 멈춤 조건 : 더이상 분류할 속성이 없을 때, 가장 많은 속성을 반환
+    
+    bestFeat = chooseBestFeatureToSplit(dataSet)
+    bestFeatLabel = labels[bestFeat]
+    myTree = {bestFeatLabel : {}} # 유일한 값의 리스트를 구하고 딕셔너리에 넣음
+    del(labels[bestFeat])
+    featValues = [example[bestFeat] for example in dataSet]
+    uniqueVals = set(featValues)
+    
+    for value in uniqueVals :
+        subLabels = labels[:] # 모든 값의 라벨들을 서브라벨에 복사함
+        myTree[bestFeatLabel][value] = createTree(splitDataSet(dataSet, bestFeat, value), subLabels)
+    return myTree
+```
+
+	- 아직은 트리에 값이 0, 1로만 되어있어서, 실제로 분류하고자 하는 no surfacing 이랑 flippers로 트리 바꿔준다.
+	
+```python
+def retriveTree(i) :
+    listOfTrees = [{'no surfacing' : {0: 'no',
+                                     1: {'flippers' : {0: 'no',
+                                                      1: 'yes'}}}},
+                  {'no surfacing' : {0: 'no',
+                                    1: {'flippers' : {0: {'head' : {0: 'no',
+                                                                   1: 'yes'}},
+                                                     1: 'no'}}}}]
+    return listOfTrees[i]
+```
+
+```python
+def classify1(inputTree, featLabels, testVec) :
+    # retriveTree 함수를 통해 생성되는 트리의 최종 데이터형이 list기 때문에
+    # inputTree 로 하나, inputTree.keys()로 하나 똑같이 출력되지만
+    # 트리의 최종 자료형이 달라지는 경우에는 keys() 나 values()를 통해서 추출해서 쓰거나 한다.
+    firstStr = list(inputTree)[0]
+    secondDict = inputTree[firstStr]
+    featIndex = featLabels.index(firstStr)
+    key = testVec[featIndex]
+    valueOfFeat = secondDict[key]
+    
+    if isinstance(valueOfFeat, dict) :
+        classLabel = classify1(valueOfFeat, featLabels, testVec)
+    else :
+        classLabel = valueOfFeat
+    return classLabel
+
+myTree = retriveTree(0)
+classify1(myTree, labels, [1,0])
+```
+
+	- 이렇게 하면 'no'로 출력된다.
+	
+```python
+classify1(myTree, labels, [1,1])
+```
+	
+	- 이렇게 하면 'yes'로 출력된다.
+	
+	
+
+### Linear Regression
+
+
+##### 선형회귀란?
+
+![linear regression](https://user-images.githubusercontent.com/31824102/35181510-dc9c2998-fdba-11e7-9a2a-edf38c40b3f3.PNG)
+
+	- 독립변수와 종속변수의 관계가 선형으로 나오는 경우
+	
+```python
+# 선형회귀 
+
+np.random.seed(seed=1)
+X_min = 4
+X_max = 30
+X_n = 16
+X = 5 + 25 * np.random.rand(X_n)
+Prm_c = [170 ,108, 0.2]
+T = Prm_c[0] - Prm_c[1] * np.exp(-Prm_c[2] * X) + 4 * np.random.randn(X_n)
+np.savez('ch5_data.npz', X=X, X_min=X_min, X_max=X_max, X_n=X_n, T=T)
+print(np.round(X, 2))
+print(np.round(T, 2))
+
+plt.figure(figsize=(4,4))
+plt.plot(X, T, marker='o', linestyle='None', markeredgecolor='black', color='cornflowerblue')
+plt.xlim(X_min, X_max)
+plt.grid(True)
+plt.show()
+```
+
+	- 출력결과는 ipynb에서
+	- 정확히 맞추는건 불가하고, 어느정도 오차를 허옹하면 그럴듯하게 직선 그려서 예측 가능
+
+
+**평균 제곱 오차(mean square error, MSE) 함수
+
+![mse](https://wikimedia.org/api/rest_v1/media/math/render/svg/67b9ac7353c6a2710e35180238efe54faf4d9c15)
+
+
+	- 오차의 제곱에 대해 평균을 취함
+	- MSE가 작을 수록 원본과의 오차가 적음
+	
+	- w0, w1을 결정하면 그에 대한 평균 제곱 오차를 계산할 수 있다.
+	- 그러나, 어떤 w0과 w1을 선택하더라도, 데이터가 직선 상에 나란히 있지 않으므로 MSE가 완전히 0은 안됨
+	
+	- 아래 예제를 통해 w와 MSE와의 관계를 살펴보자
+	
+	
+```python
+# w와 MSE와의 관계
+
+from mpl_toolkits.mplot3d import Axes3D
+
+def mse_line(x, t, w) :
+    y = w[0] * x + w[1]
+    mse = np.mean((y - t)**2)
+    return mse
+
+xn = 100
+w0_range = [-25, 25]
+w1_range = [120, 170]
+x0 = np.linspace(w0_range[0], w0_range[1], xn)
+x1 = np.linspace(w1_range[0], w1_range[1], xn)
+xx0, xx1 = np.meshgrid(x0, x1)
+MSE = np.zeros((len(x0), len(x1)))
+
+for i0 in range(xn) :
+    for i1 in range(xn) :
+        MSE[i1, i0] = mse_line(X, T, (x0[i0], x1[i1]))
+        
+plt.figure(figsize=(9.5, 4))
+plt.subplots_adjust(wspace=0.5)
+
+ax = plt.subplot(1, 2, 1, projection='3d')
+ax.plot_surface(xx0, xx1, MSE, rstride=10, cstride=10, alpha=0.3, color='blue', edgecolor='black')
+ax.set_xticks([-20, 0, 20])
+ax.set_yticks([120, 140, 160])
+ax.view_init(20, -60)
+
+plt.subplot(1, 2, 2)
+cont = plt.contour(xx0, xx1, MSE, 30, colors='black', levels=[100, 1000, 10000, 100000])
+cont.clabel(fmt='%1.0f', fontsize=8)
+plt.grid(True)
+plt.show()
+```
+
+	- 출력 결과는 ipynb
+	- 왼쪽 그래프는 MSE, 오른쪽 그래프는 MSE의 등고선 표시
+		- MSE 보면 w0 방향의 변화에 MSE가 크게 변한다.
+			- 기울기가 조금이라도 바뀌면, 직선이 데이터 점에서 크게 어긋나기 때문이다.
+			- 그러나, 3D 그래프는 w1 방향의 변화를 알기엔 어렵다.
+		- 오른쪽 그림은 w0 = 3, w1 = 135 근처에서 MSE가 최소값을 취할 것 같다.
+		
+	- MSE도 구했으면, 매개 변수를 구해본다.
+	
+	
+**경사하강법**
+
+
+> MSE가 가장 작아지는 w0과 w1은 어떻게 구할까?
+
+	- 우선 초기 위치로 적당한 w0과 w1을 결정
+	- 이것은 MSE 지형 위의 한 지점에 대응함
+	- 이 점에서의 기울기를 확인하고, MSE가 가장 감소하는 방향으로 w0과 w1을 조금만 진행
+	- 이 절차를 여러번 반복
+	- 최종적으로 MSE가 가장 작아지는 그릇의 바닥인 w0과 w1에 도달 가능
+	
+	- 어느 지점(w0, w1)에 서서 주위를 빙 둘러봤을 때
+	- 언덕의 위쪽 방향은 MSE를 w0과 w1로 편미분한 벡터를 표시
+	- 이것을 MSE의 기울기로 부름
+	- MSE를 최소화 하려면 MSE의 기울기의 반대 방향으로 진행
+	
+	
+```python
+# w0, w1의 기울기 구하기
+
+def dmse_line(x, t, w) :
+    y = w[0]* x + w[1]
+    d_w0 = 2 * np.mean((y - t) * x)
+    d_w1 = 2 * np.mean(y - t)
+    return d_w0, d_w1
+
+d_w = dmse_line(X, T, [10, 165])
+print(np.round(d_w, 1))
+```
+
+	- [5046.3  301.8] 로 나옴. w0과 w1의 기울기이며, w0의 기울기가 w1 기울기보다 크다.
+	
+	- 매개변수를 구한다. 여기에는 경사하강법을 이용한다.
+	- 경사하강법 함수를 구현해보자 (fit_line_num(x,t))
+		- fit_line_num(x,t) 는 데이터 x,t를 인수로하여 mse_line을 최소화 하는 w를 반환한다.
+		- w는 초기값 w_init = [10.0, 165.0] 에서 시작, dmse_line에서 구한 기울기 w를 갱신한다.
+		- 갱신 단계의 폭이 되는 학습 비율은 alpha = 0.001
+		- w이 평평한 곳에 도달하면(즉, 기울기가 충분하게 적어지면) w의 갱신을 종료
+			- 즉, 기울기의 값이 eps = 0.1보다 작아지면 빠져나옴
+		- 프로그램 실행시 마지막으로 얻어진 w값, w의 갱신내역 등을 표시함
+		
+		
+```python
+# 경사하강법
+
+def fit_lie_num(x, t) :
+    w_init = [10.0, 165.0] # 초기 매개 변수
+    alpha = 0.001 # 학습률
+    i_max = 100000 # 반복 최대수
+    eps = 0.1 # 기울기 절대값의 한계
+    w_i = np.zeros([i_max, 2])
+    w_i[0, :] = w_init
+    
+    for i in range(1, i_max) :
+        dmse = dmse_line(x, t, w_i[i -1])
+        w_i[i, 0] = w_i[i - 1, 0] - alpha * dmse[0]
+        w_i[i, 1] = w_i[i - 1, 1] - alpha * dmse[1]
+        
+        if max(np.absolute(dmse)) < eps : 
+            break # 절대값보다 작아지면 종료 판정
+    w0 = w_i[i, 0]
+    w1 = w_i[i, 1]
+    w_i = w_i[:i, :]
+    return w0, w1, dmse, w_i
+    
+plt.figure(figsize=(4,4)) # MSE 등고선 표시
+xn = 100 # 등고선 해상도
+w0_range = [-25, 25]
+w1_range = [120, 170]
+x0 = np.linspace(w0_range[0], w0_range[1], xn)
+x1 = np.linspace(w1_range[0], w1_range[1], xn)
+xx0, xx1 = np.meshgrid(x0, x1)
+
+for i0 in range(xn) :
+    for i1 in range(xn) :
+        MSE[i1, i0] = mse_line(X, T, (x0[i0], x1[i1]))
+
+cont = plt.contour(xx0, xx1, MSE, 30, colors='black', levels=[100, 1000, 10000, 100000])
+cont.clabel(fmt='%1.0f', fontsize=8)
+plt.grid(True)
+plt.show()
+```
+
+	- 출력 결과는 ipynb에서..
+	- 등고선에 w값이 뜨기는 떴는데.. 뭐가 갱신값인지 잘 모르겠음
+	
+```python
+# w 갱신값 표시하여 재출력
+
+plt.figure(figsize=(4,4)) # MSE 등고선 표시
+xn = 100 # 등고선 해상도
+w0_range = [-25, 25]
+w1_range = [120, 170]
+x0 = np.linspace(w0_range[0], w0_range[1], xn)
+x1 = np.linspace(w1_range[0], w1_range[1], xn)
+xx0, xx1 = np.meshgrid(x0, x1)
+
+for i0 in range(xn) :
+    for i1 in range(xn) :
+        MSE[i1, i0] = mse_line(X, T, (x0[i0], x1[i1]))
+
+cont = plt.contour(xx0, xx1, MSE, 30, colors='black', levels=[100, 1000, 10000, 100000])
+cont.clabel(fmt='%1.0f', fontsize=8)
+plt.grid(True)
+
+# 이 부분의 코드를 추가한다.
+# 경사 하강법 호출
+W0, W1, dMSE, W_history = fit_line_num(X, T)
+
+# 갱신값 포함하여 결과 보기
+print("반복 횟수 {0}\n".format(W_history.shape[0]))
+print("W = [{0:.6f}, {1:.6f}]\n".format(W0, W1))
+print('dMSE = [{0:.6f}, {1:.6f}]\n'.format(dMSE[0], dMSE[1]))
+print('MSE = {0:.6f}\n'.format(mse_line(X, T, [W0, W1])))
+plt.plot(W_history[:, 0], W_history[:, 1], '.-',
+        color='gray', markersize=10, markeredgecolor='cornflowerblue')
+plt.show()
+```
+
+	- 출력 결과는 ipynb
+	- 파랗게 표기된 부분이 w의 갱신
+	- 처음에는 가파른 계곡으로 진행해 골짜기에 정착하면, 계곡의 중앙 부근에 천천히 나아가서 기울기가 거의 없어지는 지점에 도달
+	
+	- w0, w1 아까 구했던거를 직선 식에 대입해본다.
+	
+	
+```python
+# w0, w1 직선식에 대입하기
+
+# 선 표시하기
+def show_line(w) :
+    xb = np.linspace(X_min, X_max, 100)
+    y = w[0] * xb + w[1]
+    plt.plot(xb, y, color=(.5, .5, .5), linewidth=4)
+    
+plt.figure(figsize=(4,4))
+W = np.array([W0, W1])
+mse = mse_line(X, T, W)
+print("w0 = [0:.3f], w1 = {1:.3f}\n".format(W0, W1))
+print("SD = {0:.3f} cm\n".format(np.sqrt(mse)))
+show_line(W)
+
+plt.plot(X, T, marker='o', linestyle='None', color='cornflowerblue', markeredgecolor='black')
+plt.xlim(X_min, X_max)
+plt.grid(True)
+plt.show()
+```
+
+	- 출력 결과는 ipynb
+	- 출력 결과를 보면, w0 = 1.540, w1 = 136.176, SD = 7.002 cm 이렇게 나온다.
+	
+	- 이를 통해서 회귀방정식을 구해보면
+		- y = (w0)x + (w1)
+		- y = 1.5x + 136.175
+
+> 데이터가 근데 완전히 일치하지가 않는다. 그럼 데이터랑 얼마나 차이가 날까?
+
+	- 평균 제곱 오차가 49.03cm² (직관적이지 않다)
+	- 평균 제곱 오차의 제곱근 = 7.00cm (표준편차)
+	
+	- 오차가 대략 7.00cm 라는거는.....
+		- 오차가 정규분포를 따른다고 가정 했을 때, 전체의 68%의 데이터 점에서 오차가 7cm 이하라는 뜻
+		- 정규 분포의 경우, 평균에서의 차이가 표준편차의 범위에 분포의 68%가 들어감
+		
+
+	
+	
 	
