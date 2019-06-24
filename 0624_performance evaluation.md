@@ -11,17 +11,23 @@
     2. 효율성 : 얼마나 적은 feature를 사용하여 모형을 구축했는가?
     3. 정확성 : 모형이 실제 문제에 적용될 수 있을 만큼 충분한 성능이 나오는가? 
     
+    
 ##### Confusion Matrix
+
 
 ![calculation in confusion matrix](https://www.dataschool.io/content/images/2015/01/confusion_matrix2.png)
 
 (참고 URL : https://www.dataschool.io/simple-guide-to-confusion-matrix-terminology/)
 
+(참고 URL2 : https://bcho.tistory.com/1206)
+
 
   - true positives (TP): These are cases in which we predicted yes (they have the disease), and they do have the disease.
   - true negatives (TN): We predicted no, and they don't have the disease.
-  - false positives (FP): We predicted yes, but they don't actually have the disease. (Also known as a "Type I error.")
-  - false negatives (FN): We predicted no, but they actually do have the disease. (Also known as a "Type II error.")
+  - false positives (FP): We predicted yes, but they don't actually have the disease. 
+    - (Also known as a "Type I error.")
+  - false negatives (FN): We predicted no, but they actually do have the disease. 
+    - (Also known as a "Type II error.")
   
   - Accuracy: Overall, how often is the classifier correct?
     - (TP+TN)/total = (100+50)/165 = 0.91
@@ -45,7 +51,9 @@
     
   - 주요 기초 개념들을 참고 URL에서 볼 수 있음
   
+  
 ##### F1 Score
+
 
 (참고 URL : https://nittaku.tistory.com/295)
 
@@ -71,6 +79,7 @@
 
 
 ##### ROC ＆ AUC
+
 
   - ROC curve : Receiver Operating Characterestic curve
   - 보통 binary classification  이나 medical application 에서 많이 쓰는 성능 척도이다.
@@ -169,6 +178,7 @@
    
 ##### ROC 커브 그려보기 예제
 
+
 ```python
 # 다음과 같은 모듈들을 미리 불러주고...
 
@@ -248,8 +258,42 @@ plot_roc_curve(fpr, tpr)
 ##### k-겹 교차검증 (k-fold cross-validation)
 
 
+  - K개의 fold 를 만들어서 진행하는 교차검증
+  
+> 왜 k-fold 교차검증을 사용할까?
+
+  1. 총 데이터 갯수가 적은 데이터셋에 대해 정확도를 향상시킬 수 있음
+  2. 이는 기존에 Training / Validation / Test 세 개의 집단으로 분류하는 것 보다, Training과 Test 로만 분류할때 데이터 셋이 더 많기 때문이다.
+  3. 데이터 수가 적은데 검증과 테스트에 데이터를 더 뺏겨버리게 되면, underfitting 등 성능이 미달되는 모델이 학습이 되기 때문이다.
+  
+  - 그림을 통해 살펴보자
+  
+![k-fold validation1](https://blogfiles.pstatic.net/MjAxODA2MTNfMTkg/MDAxNTI4ODY1MzQzMTAw.mm2vnmN4VV_6-v1W84YkqBlwxcnTdS73f7ZN0gDkDOsg._7jgav1jx55qa7BrrgFkTgqWfrioQn5kjgejCA3rSx8g.PNG.ssdyka/ch05_%EA%B5%90%EC%B0%A8%EA%B2%80%EC%A6%9D.png?type=w2)
+
+  - 5겹 교차검증일 때 검증 과정은 각 fold 마다 한 단계씩을 거치게 된다.
+  
+> k-fold 교차검증을 하는 과정
+
+  1. 기존 과정과 같이 Training Set과 Test Set을 나눈다.
+  2. Training을 K개의 fold 로 나눈다.
+  3. 위는 5개의 fold로 나눴을 때 모습
+  4. 한 개의 fold에 있는 데이터를 다시 K개로 쪼갠 다음, K-1개는 Training Data, 마지막 한개는 Validation Data Set 으로 지정한다.
+  5. 모델을 생성하고 예측을 진행, 이에 대한 에러값을 추출한다.
+  6. 다음 fold 에서는 Validation set을 바꿔서 지정, 이전 Fold 에서 Validation 역할을 했던 Set은 다시 Training Set 으로
+  7. 이를 K번 반복한다.
+  
+  (기존 kNN 파트 부분 설명을 참조하자)
+  
+  8. 각각의 fold의 시도에서 기록된 Error 을 바탕(에러들의 평균)으로 최적의 모델(조건)을 찾는다
+  9. 해당 모델(조건)을 바탕으로 전체 Training set의 학습을 진행한다.
+  10. 해당 모델을 처음에 분할하였던 Test set을 활용하여 평가한다.
+  
+> k-fold 교차검증 에서는...
+
   - k는 특정 숫자로 보통 5 또는 10을 사용한다.
   - 데이터를 fold 라고 하는 비슷한 크기의 '부분 집합' 으로 나눈다.
+  
+  - 예시를 통해서 살펴보자.
   
   
 ```python
@@ -286,3 +330,203 @@ print("교차 검증 평균 점수 : {:.2f}".format(scores.mean()))
 ```
 
   - 교차 검증 평균 점수 : 0.97
+
+
+### Exploratory Data Analysis
+
+
+**타이타닉 데이터를 이용한 분석, 시각화 실습**
+
+
+  - 실제 타이타닉의 탑승객의 데이터를 가지고, 분석 모델 예측을 해보자.
+  - 타이타닉의 승객들의 정보들을 담아볼 수 있고, 이를 시각화 해서 나타내볼 수 있음
+  - 실행 전체 결과는 ipynb 통해서 볼 수 있음
+  
+  
+**안전 운전자 예측 경진대회 데이터를 이용한 분석 실습**
+
+  - 훈련 데이터에는 59만명의 운전자에 관련한 데이터가 포함되어있다.
+  - 테스트 데이터에는 89만명 가량의 운전과 관련된 데이터가 포함
+  - 테스트 데이터에는 운전자의 보험 청구 여부를 나타내는 'target'  변수를 포함하고 있지 않아서,
+    - 훈련 데이터보다 변수가 하나 적은 58개이다.
+    
+```python
+import pandas as pd
+import numpy as np
+
+trn = pd.read_csv('C:/Users/Affinity/Desktop/개인자료/module3/ssd_train.csv', 
+                  na_values=['-1', '-1.0'])
+tst = pd.read_csv('C:/Users/Affinity/Desktop/개인자료/module3/ssd_test.csv', 
+                  na_values=['-1', '-1.0'])
+
+# 데이터 크기 확인
+print(trn.shape, tst.shape)
+```
+
+  - (595212, 59) (892816, 58)
+  - 실제 데이터 셋의 차이 갯수가 하나씩 나는걸 알 수 있다. (왼쪽은 size)
+  
+```python
+# 데이터 첫 5줄 확인
+trn.head()
+
+# 데이터프레임에 대한 메타 정보를 확인한다
+trn.info()
+```
+
+  - 
+    <class 'pandas.core.frame.DataFrame'>
+  
+    RangeIndex: 595212 entries, 0 to 595211
+  
+    Data columns (total 59 columns):
+  
+    id                595212 non-null int64
+   
+    target            595212 non-null int64
+   
+    ps_ind_01         595212 non-null int64
+   
+    ps_ind_02_cat     594996 non-null float64
+  
+    ps_ind_03         595212 non-null int64
+  
+    ps_ind_04_cat     595129 non-null float64
+  
+    ps_ind_05_cat     589403 non-null float64
+  
+  - 이런식의 결과가 나온다.
+  
+  - 대부분의 변수가 수치형이다.
+  - 변수명이 'ps_ind_..' 형태로 익명화 되어있음
+  - 경진대회 주최 측에서 고객의 개인정보 보호를 위하여 철저하게 익명화 한 것으로 파악
+  
+  - 익명화된 변수명을 통해 변수의 형태를 짐작할 수 있음
+    - bin 으로 끝나는 변수는 이진(binary) 변수이고,
+    - cat 으로 끝나는 변수는 범주형(category) 변수
+    - -1 값은 결측값, 데이터를 불러오는 과정에서 NaN으로 지정
+    
+    
+```python
+np.unique(trn['target'])
+# 실행 결과 : array([0, 1], dtype=int64)
+
+1.0 * sum(trn['target']) / trn.shape[0]
+# 실행 결과 : 0.036447517859182946
+```
+
+  - 타겟 변수의 고유값은 보험 청구 여부를 나타내는 [0,1]중 하나의 값을 가지는 이진 변수
+  - 전체 데이터 중 3.6%의 운전자가 보험 청구를 진행함
+  - 문제 특성상, 타겟 변수가 1일 확률이 매우 낮은, 불균형한 데이터
+  
+```python
+# 훈련 데이터와 테스트 데이터를 통합
+tst['target'] = np.nan
+df = pd.concat([trn, tst], axis=0)
+```
+
+```python
+import matplotlib
+import matplotlib.pyplot as plt
+%matplotlib inline
+import seaborn as sns
+
+# 시각화 함수 미리 정의
+def bar_plot(col, data, hue=None) :
+    f, ax = plt.subplots(figsize=(10, 5))
+    sns.countplot(x=col, hue=hue, data=data, alpha=0.5)
+    plt.show()
+    
+def dist_plot(col, data) :
+    f, ax = plt.subplots(figsize=(10, 5))
+    sns.distplot(data[col].dropna(), kde=False, bins=10)
+    plt.show()
+    
+def bar_plot_ci(col, data) :
+    f, ax = plt.subplots(figsize=(10, 5))
+    sns.barplot(x=col, y='target', data=data)
+    plt.show()
+```
+
+```python
+# 분석의 편의를 위해 변수 유형별로 구분한다.
+
+# 이진변수 작성
+binary = []
+for index in range(6, 19) :
+    binary.append("ps_ind_{}_bin".format(index))
+for index in range(14, 16) :
+    binary.remove("ps_ind_{}_bin".format(index))        
+for index in range(15, 21) :
+    binary.append("ps_calc_{}_bin".format(index))
+    
+# 범주형변수 작성
+category = []
+for index in range(2, 6) :
+    category.append("ps_ind_{}_cat".format(index))
+for index in range(3, 4) :
+    category.remove("ps_ind_{}_cat".format(index))        
+for index in range(1, 12) :
+    category.append("ps_car_{}_cat".format(index))
+
+# 정수형 변수
+integer = []
+for index in range(1, 4) :
+    integer.append("ps_ind_{}".format(index))
+for index in range(2, 3) :
+    integer.remove("ps_ind_{}".format(index))
+for index in range(14, 16) :
+    integer.append("ps_ind_{}".format(index))
+for index in range(4, 15) :
+    integer.append("ps_calc_{}".format(index))
+integer.append("ps_car_{}".format(11))    
+
+# 소수형 변수
+floats = []
+for index in range(1, 4) :
+    floats.append("ps_reg_{}".format(index))
+for index in range(1, 4) :
+    floats.append("ps_calc_{}".format(index))        
+for index in range(12, 16) :
+    floats.append("ps_car_{}".format(index))
+```
+
+```python
+print(binary,"\n\n", category,"\n\n", integer,"\n\n", floats)
+```
+
+  - binary 는 이러한 값이 담긴다.
+     ['ps_ind_6_bin', 'ps_ind_7_bin', 'ps_ind_8_bin', 'ps_ind_9_bin', 'ps_ind_10_bin', 'ps_ind_11_bin', 
+ 
+    'ps_ind_12_bin', 'ps_ind_13_bin', 'ps_ind_16_bin', 'ps_ind_17_bin', 'ps_ind_18_bin', 'ps_calc_15_bin', 
+  
+    'ps_calc_16_bin', 'ps_calc_17_bin', 'ps_calc_18_bin', 'ps_calc_19_bin', 'ps_calc_20_bin'] 
+
+  - category 는 이러한 값이 담긴다.
+     ['ps_ind_2_cat', 'ps_ind_4_cat', 'ps_ind_5_cat', 'ps_car_1_cat', 'ps_car_2_cat', 'ps_car_3_cat', 
+    
+    'ps_car_4_cat', 'ps_car_5_cat', 'ps_car_6_cat', 'ps_car_7_cat', 'ps_car_8_cat', 'ps_car_9_cat', 
+   
+    'ps_car_10_cat', 'ps_car_11_cat'] 
+
+  - integer 는 이러한 값이 담긴다.
+    ['ps_ind_1', 'ps_ind_3', 'ps_ind_14', 'ps_ind_15', 'ps_calc_4', 'ps_calc_5', 'ps_calc_6', 'ps_calc_7', 
+    
+    'ps_calc_8', 'ps_calc_9', 'ps_calc_10', 'ps_calc_11', 'ps_calc_12', 'ps_calc_13', 'ps_calc_14', 
+   
+    'ps_car_11'] 
+
+  - floats 는 이러한 값이 담긴다.
+    ['ps_reg_1', 'ps_reg_2', 'ps_reg_3', 'ps_calc_1', 'ps_calc_2', 'ps_calc_3', 'ps_car_12', 'ps_car_13', 
+    
+    'ps_car_14', 'ps_car_15']
+    
+    
+```python
+# 시각화
+
+for col in binary + category + integer :
+    bar_plot(col, df)
+```
+
+  - 출력 결과는 ipynb 에서
