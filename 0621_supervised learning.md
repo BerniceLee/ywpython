@@ -807,5 +807,86 @@ plt.show()
 		
 
 	
+### SVM (Support Vector Machine)
+
+##### SVM 이란?
+
+	- 퍼셉트론 : 가장 단순하고 빠른 판별 함수 기반 분류 모형이지만 판별 경계선(decision hyperplane)이 유니크하게 존재하지 않는다는 특징
+	- SVM은 퍼셉트론을 기반으로, 가장 안정적인 판별 경계선을 찾기 위하 제한 조건을 추가한 모형
+	
+![SVM1](https://datascienceschool.net/upfiles/3e0a11567a154fc6a5e25010a68b5872.png)
+
+> "How do we divide the space with decision boundaries?"
+
+	- 예시를 통해 살펴보자
+	
+![SVM ex1](https://4.bp.blogspot.com/-ln7nyPwA7UE/WmwCQd-IeVI/AAAAAAAACfI/Cus1PN4tAuMUgTUqELM6yWYDBoCQeC1CgCK4BGAYYCw/s200/svm1.png)
+
+	- 이런 이슈들을 생각해볼 수 있다.
+	
+	1. 우리가 ′+′ 샘플과 ′−′ 샘플을 구별하고 싶다면 어떤 식으로 나눠야 하는가? 
+	2. 만약 선을 그어 그 사이를 나눈다면 어떤 선이어야 할 것인가? 
+	
+	- 아마도 ′+′와 ′−′ 샘플 사이의 거리를 가장 넓게 쓰는 어떤 line으로 다음과 같은 녀석(점선)일 것이다.
+	
+![SVM ex2](https://4.bp.blogspot.com/-pYY6U0peR74/WmwCRbFsM7I/AAAAAAAACfQ/gwcY8_j13yU6qwkITBmgd2yrVkKd2hvQwCK4BGAYYCw/s200/svm2.png)
+
+	- 직관적으로도 이렇게 풀 수 있지만, SVM은 체계적으로 아이디어를 개발하고 논리를 전개하는 과정 그 자체다.
+	- 과정들을 이제 살펴보자
 	
 	
+**Decision Rule**
+
+
+	- w⃗  를 하나 그려보자. 이 벡터는 우리가 그릴 street의 중심선에 대해 직교하는 벡터다.
+	
+![SVM ex3](https://1.bp.blogspot.com/-n2tSWYD_XoA/WmwE1cP5ctI/AAAAAAAACfo/3eniT7SzJioB4SdJVL-HTJSb_ouTLLQ_gCK4BGAYYCw/s200/svm3.png)
+
+	- 그리고 이제 모르는 샘플 u⃗  하나가 있을 때 우리가 궁금한 것은 
+	- street를 기준으로 이 녀석이 오른쪽에 속할지 혹은 왼쪽에 속할지이다.
+	
+		- 두 벡터를 내적해보고, 그 값이 상수 c보다 큰지 안큰지 한번 비교해보는 것이다.
+	
+	- 따라서, w⃗ ⋅u⃗ +b≥0  then ‘+', 이 내적식이 decision rule 이 된다.
+	
+		- 하지만, 저 수식에서 어떤 벡터 w를 잡아야 하는지, 어떤 b를 잡아야 하는지 우린 아무것도 모름.
+		- 이걸 계산할 수 있도록, 여러 제약 조건들을 추가해보는 작업을 해보자
+		
+		
+**Design and add Additional constrains**
+
+	- 위의 식에서 조금 더 나아가서 x+를 ‘+′ 샘플 x−가 ‘−′ 샘플이라 할 때 다음과 같이 적어보자
+	
+		- w⃗ ⋅x⃗ ++b≥1
+		- w⃗ ⋅x⃗ −+b≤−1
+	
+	- 즉, `+' 샘플을 예를 들면 이 샘플에 대해서는 우리의 decision rule이 최소한 1보다는 큰 값을 주도록 해본 것
+	
+	
+> 구체화 되긴 했는데, 여전히 문제가 쉬워지지는 않았다?
+
+	- 여기에 variable 하나를 고안해서 문제를 좀 바꿔보자.
+	
+		- yi={ 1 for‘+′ / -1 for‘−′ } 
+	
+	- 이제 이 새로운 variable yi 를 수식에 각각 곱한다.
+	
+		- yi(w⃗ ⋅x⃗ i+b)≥1
+		- yi(w⃗ ⋅x⃗ i+b)−1≥0 (위에꺼를 조금 정리한 수식)
+	
+	- 여기까지 했을 때, 등호가 성립할 때는 x⃗ i가 정확히 street의 양 쪽 노란 경계선에 정확히 걸쳐 있을 때라는 제약을 하나 더 추가해보자.
+	
+	- 즉, 위에 그림에서 경계(노란선, gutters)에 걸칠 ‘+′ 샘플 하나와 ‘−′ 샘플 두 개에 대한 수식의 결과가 0이 된다.
+	
+		- yi(w⃗ ⋅x⃗ i+b)−1=0forx⃗ i∈노란선 (gutters)
+		
+		
+	- 이 쯤에서 우리가 하고자 했던 목적을 상기해보자.
+	- 우리는  ‘+′ 샘플과 ‘−′ 샘플 사이의 거리를 가능한 최대로 넓게 하고 싶다.
+	
+![SVM ex4](https://2.bp.blogspot.com/-Kb58kvRn3p0/WmwKaCgfcQI/AAAAAAAACgA/FprZTNJDE7cLr_37_7AvnPuLe0PBuW9hgCK4BGAYYCw/s200/svm4.png)
+
+	- WIDTH 거리값은 결국, 2 / w벡터의 절대값이 된다.
+	
+	
+> SVM 모델은, WIDTH 거리를 최대화 하고싶다는 목적을 가지고 있다!
