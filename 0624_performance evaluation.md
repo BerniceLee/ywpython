@@ -78,7 +78,7 @@
   - /"뭔가 큰 값이 있다면 패널티를 주어서, 작은값 위주로 평균을 구한다."/
 
 
-##### ROC ＆ AUC
+### ROC ＆ AUC
 
 
   - ROC curve : Receiver Operating Characterestic curve
@@ -255,7 +255,7 @@ plot_roc_curve(fpr, tpr)
   - 실행결과는 ipynb 에서
   
   
-##### k-겹 교차검증 (k-fold cross-validation)
+### k-겹 교차검증 (k-fold cross-validation)
 
 
   - K개의 fold 를 만들어서 진행하는 교차검증
@@ -293,6 +293,10 @@ plot_roc_curve(fpr, tpr)
   - k는 특정 숫자로 보통 5 또는 10을 사용한다.
   - 데이터를 fold 라고 하는 비슷한 크기의 '부분 집합' 으로 나눈다.
   
+  - 교차 검증에 cross_validate 함수를 쓸 수 있다.
+    - 이 함수는, cross_val_score 함수와 인터페이스가 비슷하지만, 분할마다 훈련과 테스트에 걸린 시간을 담은 딕셔너리를 반환한다.
+
+
   - 예시를 통해서 살펴보자.
   
   
@@ -331,8 +335,295 @@ print("교차 검증 평균 점수 : {:.2f}".format(scores.mean()))
 
   - 교차 검증 평균 점수 : 0.97
 
+  - "cross_validate" 함수는 무엇일까? 
+ 
+  
+```python
+from sklearn.model_selection import cross_validate
+res = cross_validate(logreg, iris.data, iris.target, 
+                    cv=5, return_train_score=True)
+display(res)
+```
+
+  - 실행 결과 : 이런식으로 훈련과 테스트에 걸린 시간들을 담은 딕셔너리가 반환된다.
+  
+      {'fit_time' : array([.....]),
+      
+      'score_time' : array([.....]),
+      
+      'test_score' : array([.....])
+
+> k-겹 교차검증 요약...
+
+  - k-겹 교차검증은, 각 fold 가 한번씩 test로 사용되어..
+    - 분류하기 어려운 데이터만 훈련하거나, 쉬운 데이터만 테스트에 사용되는 불상사를 막는다.
+  - 분할을 한번 했을 때 보다 데이터를 더 효과적으로 사용할 수 있다.
+    - train_test_split 을 사용하면, 보통 데이터중 75%를 훈련 세트로, 나머지 25%를 평가에 사용하는 식이다.
+  - 다만 연산 비용이 늘어난다.
+    - 모델을 k개 만들어야 하므로, 데이터를 한 번 나눴을때보다 k배 느리다.
+
+  - 데이터셋을 나열 순서대로 k개의 폴드로 나누는 것이 항상 좋지만은 않다.
+
+```python
+from sklearn.datasets import load_iris
+iris = load_iris()
+print("Iris 레이블 : \n", iris.target)
+```
+
+  - Iris 레이블 : [ 0.  0.  0.  0.  0. 1 1.  1.  1.  1. .....] .....  
+    - 결과가 이런식으로 나온다.
+
+
+**계층별 k-겹 교차 검증 (stratified k-fold cross-validation)**
+
+
+  - Iris 레이블 출력 결과가 [0 0.  0.  0.  1.  1.  1 1.  1.  2.  2. .....] 이런식으로 되어있다고 치자.
+  
+  - 결과에서 볼 수 있듯이 첫번쨰 1/3은 클래스 0, 두번째 1/3은 클래스 1, 마지막 1/3은 클래스 2다.
+  - 이 데이터에 3-겹 교차 검증을 작용하면?
+  
+    - 첫번째 fold : 클래스 0만 가지고 있으므로, 첫번째 반복에서 테스트셋은 클래스 0만을, 훈련 세트는 클래스 1,2만을 가짐
+    - 세번의 반복 모두 훈련셋과 테스트셋의 클래스가 다르다
+      - 이 데이터셋에서 3-겹 교차 검증의 정확도는 "0" 이 된다.
+      
+  - 단순한 k-겹 교차 검증에는 문제가 있으니, scikit-learn은 분류일 경우 이 방법 대신 "계층별 k-겹 교차 검증"을 사용
+  
+> 계층별 교차 검증 : fold 안의 클래스 비율이 전체 데이터셋의 클래스 비율과 "같도록" 데이터를 나눈다!
+
+![stratified k-fold cross-validation](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Ft1.daumcdn.net%2Fcfile%2Ftistory%2F99AC85375A5BE1300B)
+
+  - 예를 들면...
+    - 샘플의 90%가 클래스 A, 10%가 클래스 B에 속하면, 계층별 교차 검증은 각 폴드에 클래스 A 샘플이 90%, 클래스 B 샘플이 10%
+    - 분류기의 일반화 성능을 측정할때, 더 안정적인 "계층별" k-겹 교차 검증을 사용하는게 좋다
+    - 클래스 B에 속한 샘플이 10% 정도라면, 기본 k-겹 교차 검증에서는 클래스 A 샘플만 가진 폴드가 생기기 쉽다.
+      - 이런 폴드를 테스트 세트로 사용하면, 분류기의 전체 성능을 크게 왜곡하게 된다.
+      
+      
+**LOOCV (Leave-one-out cross-validation)**
+
+
+![LOOCV](https://smlee729.github.io/img/2015-03-19-1-loocv/loocv1.png)
+
+  - n개의 데이터 샘플 중에서 한개의 데이터 샘플을 testset 으로 하고, n-1개를 trainingset 으로 두고 모델을 검증
+  
+  
+```python
+from sklearn.datasets import LeaveOneOut
+loo = LeaveOneOut()
+scores = cross_val_score(logreg, iris.data, iris.target, cv=loo)
+print("교차 검증 분할 횟수 : ", len(scores))
+print("평균 정확도 : {:.2f}".format(scores.mean()))
+```  
+
+  - 실행 결과 :
+  
+      교차 검증 분할 횟수 : 150
+      
+      평균 정확도 : 0.95
+
+  - 결국 모든 샘플에 대해서 다 한번씩은 test하기 때문에 어떠한 randomness도 존재하지 않게 되는 장점이 있지만
+  - k-fold CV 에 비해 다양성을 포괄하기 어려운 단점이 있다.
+  
+  
+**임의 분할 교차 검증 (shuffle-split cross-validation)**
+
+![shuffle-split CV](https://t1.daumcdn.net/cfile/tistory/996E873B5C66799235)
+
+  - train_size 만큼의 포인트를 훈련셋으로 만들고, test_size 만큼의 (중첩안되는) 포인트로 테스트셋을 만듦
+  - n_splits 횟수만큼 반복한다.
+  
+  
+```python
+from sklearn.datasets import ShuffleSplit
+shuffle_split = ShuffleSplit(test_size=.5, train_size=.5, n_splits=10)
+scores = cross_val_score(logreg, iris.data, iris.target, cv=shuffle_split)
+print("교차 검증 점수 : ", scores)
+```   
+  
+  - 실행 결과 : 
+  
+      교차 검증 점수 : 
+      
+      [0.947 0.827 0.96 0.947 0.947 0.973 0.987 0.933 0.933]
+      
+  - 반복 횟수를 훈련셋이나 테스트셋의 크기와 "독립적으로" 조절해야 할 때 유용하다
+  - 또한 train_size, test_size 의 합을 전체와 다르게 함으로써 전체 데이터의 일부만 사용할 수 있음
+  - 이렇게 데이터를 부분 샘플링하는 방식은 -> 대규모 데이터셋으로 작업할 때 도움된다.
+      
+
+**반복 교차 검증**
+
+
+  - 데이터셋의 크기가 크지 않을 경우, 안정된 검증 점수를 얻기 위해 교차검증을 반복하여 여러번 수행하는 경우가 많다.
+    - scikit-learn 0.19ver 에는, RepeatedKFold, RepeatedStratifiedKFold 분할기가 추가되었다.
+    - 회귀에는 RepeatedKFold, 분류에는 RepeatedStratifiedKFold 를 사용
+  - 이 클래스의 객체를 cross_val_score(또는 cross_validate) 함수의 cv 매개변수에 전달하여 교차 검증을 반복할 수 있다.
+  - 분할 폴드 수는 n_splits 매개변수로 설정하며, 기본값은 5
+  - 반복 횟수는 n_repeats 매개변수로 설정하며, 기본값은 10
+
+
+```python
+from sklearn.model_selection import cross_val_score, KFold, StratifiedKFold
+from sklearn.datasets import load_iris
+from sklearn.neighbors import KNeighborsClassifier
+
+iris = load_iris()
+KNN = KNeighborsClassifier()
+```   
+
+```python
+from sklearn.model_selection import RepeatedStratifiedKFold
+rskfold = RepeatedStratifiedKFold(random_state=42)
+scores = cross_val_score(KNN, iris.data, iris.target, cv=rskfold)
+print("교차 검증 점수 : \n", scores)
+print("교차 검증 평균 점수 : {:.3f}".format(scores.mean()))
+```
+
+  - 실행 결과 : 
+  
+      교차 검증 점수 : 
+    
+        [0.96666667 0.96666667 0.96666667 0.93333333 1.         0.93333333
+     
+        1.         0.96666667 0.96666667 0.93333333 0.96666667 0.96666667
+    
+        1.         0.96666667 0.93333333 1.         0.96666667 0.96666667 ....
+        
+      교차 검증 평균 점수 : 0.965
+
+
+
+### Grid Search
+
+
+> 매개변수를 튜닝하여 일반화 성능을 개선하자!
+
+
+  - 모델에서 중요한 매개변수의 (일반화 성능을 최대로 높여주는) 값을 찾는 일은 어려운 작업이다.
+  - 하지만, 모든 모델과 데이터셋에서 해야하는 필수적인 일이다.
+  - 많이 하는 작업이라서, scikit-learn 에는 이를 위한 메소드가 이미 있다.
+  - 가장 널리 사용하는 방법은....
+    - 그리드 서치로서 관심 있는 매개변수들을 대상으로, 가능한 모든 조합을 시도해보는 것
+    
+    - (여기서는 SVC 파이썬 클래스에 구현된 RBF(radial basis function) 커널 SVM을 사용했다)
+    
+    
+```python
+# 간단한 그리드 서치 구현
+
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+
+X_train, X_test, Y_train, Y_test = train_test_split(iris.data, iris.target, random_state=0)
+print("훈련 세트의 크기 : {} 테스트 세트의 크기 : {}".format(X_train.shape[0], X_test.shape[0]))
+best_score = 0
+
+for gamma in [0.001, 0.01, 0.1, 1, 10, 100] :
+    for C in [0.001, 0.01, 0.1, 1, 10, 100] :
+        # 매개변수의 각 조합에 대해 SVC 를 훈련시킨다.
+        svm = SVC(gamma=gamma, C=C)
+        svm.fit(X_train, Y_train)
+        
+        # 테스트셋으로 SVC 를 평가함
+        score = svm.score(X_test, Y_test)
+        
+        # 점수가 더 높으면 매개변수와 함께 기록한다.
+        if score > best_score :
+            best_score = score
+            best_parameters = {'C' : C, 'gamma' : gamma}
+            
+print("최고 점수 : {:.2f}".format(best_score))
+print("최적 매개변수 : ", best_parameters)
+```    
+
+  - 실행 결과 : 
+  
+      훈련 세트의 크기 : 112 테스트 세트의 크기 : 38
+      
+      최고 점수 : 0.97
+      
+      최적 매개변수 :  {'C': 100, 'gamma': 0.001}
+
+
+**매개변수 과대적합과 검증 세트**
+
+
+  - 위 결과는 사실.. 매우 낙관적인 (혹은 잘못된) 결과이다.
+  - 여러가지 매개변수 값으로 많이 시도해보고, 테스트 세트 정확도가 가장 높은 조합을 선택했지만,
+  - 이 정확도는 새로운 데이터에까지 이어지지 않을 수 있다는 함정이 있다.
+  - 매개변수를 조정하기 위해 테스트셋을 이미 사용했으므로, 모델이 얼마나 좋은지 평가하는데엔 더이상 사용 불가
+  - 맨 처음 데이터를 훈련셋과 테스트셋으로 나눈 이유와 같다.
+    - 즉, 평가를 위해선 모델을 만들 때 "사용하지 않은" 독립된 데이터셋이 필요하다.
+    
+  - 이 경우, 데이터를 다시 나눠서 세 개의 세트로 만들어 이 문제를 해결할 수 있음
+  - 훈련셋으론 모델을 만들고, 검증 (또는 개발) 셋으로는 모델의 매개변수를 선택하고, 테스트셋으로는 선택된 매개변수의 성능을 평가한다.
+  - 검증셋을 사용해 최적의 매개변수를 선택하고, 그 매개변수에서 훈련셋과 검증셋 데이터를 모두 이용해 모델을 다시 만든다.
+  
+![매개변수 과대적합, 검증세트](https://image.slidesharecdn.com/6-180220080405/95/6algorithm-chains-and-piplinesepoch2-9-1024.jpg?cb=1519113952)  
+  
+  
+```python
+# 매개변수 과대적합과 검증 세트
+
+from sklearn.svm import SVC
+
+# 데이터를 훈련+검증, 테스트셋으로 분할하기
+X_trainval, X_test, Y_trainval, Y_test = train_test_split(iris.data, iris.target, random_state=0)
+
+# 훈련+검증셋을 훈련셋, 검증셋으로 분할하기
+X_train, X_valid, Y_train, Y_valid = train_test_split(X_trainval, Y_trainval, random_state=1)
+print("훈련셋 크기 : {} 검증셋 크기 : {} 테스트셋 크기 : {}\n".format(X_train.shape[0], X_valid.shape[0], X_test.shape[0]))
+best_score = 0
+
+for gamma in [0.001, 0.01, 0.1, 1, 10, 100] :
+    for C in [0.001, 0.01, 0.1, 1, 10, 100] :
+        # 매개변수의 각 조합에 대해 SVC 훈련
+        svm = SVC(gamma=gamma, C=C)
+        svm.fit(X_train, Y_train)
+        
+        # 검증셋으로 SVC 평가
+        score = svm.score(X_valid, Y_valid)
+        
+        # 점수가 더 높으면 매개변수와 함께 기록
+        if score > best_score :
+            best_score = score
+            best_parameters = {'C' : C, 'gamma' : gamma}
+            
+# 훈련셋과 검증셋을 합쳐 모델을 다시 만들고,
+# 테스트셋을 사용해 평가한다.
+svm = SVC(**best_parameters)
+svm.fit(X_trainval, Y_trainval)
+test_score = svm.score(X_test, Y_test)
+print("검증셋에서 최고 점수 : {:.2f}".format(best_score))
+print("최적 매개변수 : ", best_parameters)
+print("최적 매개변수에서 테스트셋 점수 : {:.2f}".format(test_score))
+```      
+  
+  
+  - 실행 결과 : 
+  
+      훈련셋 크기 : 84 검증셋 크기 : 28 테스트셋 크기 : 38
+
+      검증셋에서 최고 점수 : 0.96
+      
+      최적 매개변수 :  {'C': 10, 'gamma': 0.001}
+      
+      최적 매개변수에서 테스트셋 점수 : 0.92
+      
+  - 검증셋에서 최고 점수는 96%, 전보다 조금 낮아졌다.
+    - 데이터셋을 두번 나눴으니, X_train 이 좀 더 작아졌다
+  - 테스트셋 점수는 훨씬 낮은 92%
+  - 따라서, 앞서 예상한 97%가 아니라, 새로운 데이터에 대해 92%만 정확하게 분류한다고 말할 수 있음
+  
+> 훈련셋, 검증셋, 테스트셋의 구분은 실제 머신러닝 알고리즘을 적용하는데 아주 중요
+
+  - 모든 탐색적 분석과 모델 선택을 위해선 훈련셋과 검증셋을 사용하는 것을 권장함
+  - 마지막 평가를 위해 테스트셋을 보관하는 것이 좋다
+
+
 
 ### Exploratory Data Analysis
+
 
 
 **타이타닉 데이터를 이용한 분석, 시각화 실습**
@@ -375,25 +666,25 @@ trn.info()
 ```
 
   - 
-    <class 'pandas.core.frame.DataFrame'>
+      <class 'pandas.core.frame.DataFrame'>
   
-    RangeIndex: 595212 entries, 0 to 595211
+      RangeIndex: 595212 entries, 0 to 595211
   
-    Data columns (total 59 columns):
+      Data columns (total 59 columns):
   
-    id                595212 non-null int64
+      id                595212 non-null int64
    
-    target            595212 non-null int64
+      target            595212 non-null int64
    
-    ps_ind_01         595212 non-null int64
+      ps_ind_01         595212 non-null int64
    
-    ps_ind_02_cat     594996 non-null float64
+      ps_ind_02_cat     594996 non-null float64
   
-    ps_ind_03         595212 non-null int64
+      ps_ind_03         595212 non-null int64
   
-    ps_ind_04_cat     595129 non-null float64
+      ps_ind_04_cat     595129 non-null float64
   
-    ps_ind_05_cat     589403 non-null float64
+      ps_ind_05_cat     589403 non-null float64
   
   - 이런식의 결과가 나온다.
   
@@ -496,30 +787,30 @@ print(binary,"\n\n", category,"\n\n", integer,"\n\n", floats)
 ```
 
   - binary 는 이러한 값이 담긴다.
-     ['ps_ind_6_bin', 'ps_ind_7_bin', 'ps_ind_8_bin', 'ps_ind_9_bin', 'ps_ind_10_bin', 'ps_ind_11_bin', 
+      ['ps_ind_6_bin', 'ps_ind_7_bin', 'ps_ind_8_bin', 'ps_ind_9_bin', 'ps_ind_10_bin', 'ps_ind_11_bin', 
  
-    'ps_ind_12_bin', 'ps_ind_13_bin', 'ps_ind_16_bin', 'ps_ind_17_bin', 'ps_ind_18_bin', 'ps_calc_15_bin', 
+      'ps_ind_12_bin', 'ps_ind_13_bin', 'ps_ind_16_bin', 'ps_ind_17_bin', 'ps_ind_18_bin', 'ps_calc_15_bin', 
   
-    'ps_calc_16_bin', 'ps_calc_17_bin', 'ps_calc_18_bin', 'ps_calc_19_bin', 'ps_calc_20_bin'] 
+      'ps_calc_16_bin', 'ps_calc_17_bin', 'ps_calc_18_bin', 'ps_calc_19_bin', 'ps_calc_20_bin'] 
 
   - category 는 이러한 값이 담긴다.
-     ['ps_ind_2_cat', 'ps_ind_4_cat', 'ps_ind_5_cat', 'ps_car_1_cat', 'ps_car_2_cat', 'ps_car_3_cat', 
+      ['ps_ind_2_cat', 'ps_ind_4_cat', 'ps_ind_5_cat', 'ps_car_1_cat', 'ps_car_2_cat', 'ps_car_3_cat', 
     
-    'ps_car_4_cat', 'ps_car_5_cat', 'ps_car_6_cat', 'ps_car_7_cat', 'ps_car_8_cat', 'ps_car_9_cat', 
+      'ps_car_4_cat', 'ps_car_5_cat', 'ps_car_6_cat', 'ps_car_7_cat', 'ps_car_8_cat', 'ps_car_9_cat', 
    
-    'ps_car_10_cat', 'ps_car_11_cat'] 
+      'ps_car_10_cat', 'ps_car_11_cat'] 
 
   - integer 는 이러한 값이 담긴다.
-    ['ps_ind_1', 'ps_ind_3', 'ps_ind_14', 'ps_ind_15', 'ps_calc_4', 'ps_calc_5', 'ps_calc_6', 'ps_calc_7', 
+      ['ps_ind_1', 'ps_ind_3', 'ps_ind_14', 'ps_ind_15', 'ps_calc_4', 'ps_calc_5', 'ps_calc_6', 'ps_calc_7', 
     
-    'ps_calc_8', 'ps_calc_9', 'ps_calc_10', 'ps_calc_11', 'ps_calc_12', 'ps_calc_13', 'ps_calc_14', 
+      'ps_calc_8', 'ps_calc_9', 'ps_calc_10', 'ps_calc_11', 'ps_calc_12', 'ps_calc_13', 'ps_calc_14', 
    
-    'ps_car_11'] 
+      'ps_car_11'] 
 
   - floats 는 이러한 값이 담긴다.
-    ['ps_reg_1', 'ps_reg_2', 'ps_reg_3', 'ps_calc_1', 'ps_calc_2', 'ps_calc_3', 'ps_car_12', 'ps_car_13', 
+      ['ps_reg_1', 'ps_reg_2', 'ps_reg_3', 'ps_calc_1', 'ps_calc_2', 'ps_calc_3', 'ps_car_12', 'ps_car_13', 
     
-    'ps_car_14', 'ps_car_15']
+      'ps_car_14', 'ps_car_15']
     
     
 ```python
