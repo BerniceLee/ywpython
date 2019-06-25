@@ -38,20 +38,20 @@
 			- "Error due to Bias"
 				- Bias로 인한 에러는 예측값과 실제값 간의 차이
 				- 모델 학습시 여러 데이터를 사용하고, 반복하여 새로운 모델로 학습하면 예측값들의 범위 확인가능
-				- **Bias는 이 예측값들의 범와 위가 정답과 얼마나 멀리 있는지 측정**
+				- Bias는 이 예측값들의 범와 위가 정답과 얼마나 멀리 있는지 측정
 				
 		2. Variancce
 		
 			- "Error due to Variance"
 				- 주어진 데이터로 학습한 모델의 예측한 값의 변동성 (분산, variance)
 				- 만약 여러 모델로 학습을 반복한다고 가정하면
-				- **Variance는 학습된 모델별로 예측한 값들의 차이를 측정**
+				- Variance는 학습된 모델별로 예측한 값들의 차이를 측정
 				
-	> Bias와 Variance 는 Trade-off 관계다
+> Bias와 Variance 는 Trade-off 관계다
 	
-	![Bias, Variance, Trade-off](https://t1.daumcdn.net/cfile/tistory/261FE83B562DFB681E)
+![Bias, Variance, Trade-off](https://t1.daumcdn.net/cfile/tistory/261FE83B562DFB681E)
 	
-		- Error(X) = noise(X) + bias(X) + variance(X)
+	- Error(X) = noise(X) + bias(X) + variance(X)
 
 	- 대부분의 앙상블은 다음 그림을 따른다.
 	
@@ -325,3 +325,321 @@ plt.show()
 		
 	- 다만 차원 높고 sparse한 데이터에선 힘들다
 	- 메모리 많이 쓰고 상대적으로 느림....
+	
+	
+	
+# 부스팅
+
+### 부스팅이란?
+
+	- weak learner로 잘못 분류된 경우의 가중치를 증가시켜서 점차로 분류해 나가는 기법
+
+![Boosting1](http://www.birc.co.kr/wp-content/uploads/2017/02/boosting-1024x464.png)
+
+	- 각 자료들에 '가중치' 를 넣어 계산한다.
+	
+![Bagging vs Boosting](http://www.birc.co.kr/wp-content/uploads/2017/02/Screenshot-at-2018-02-06-093314.png)	
+
+	- 배깅은 parallel, 부스팅은 sequeitial
+	
+	
+##### 에이다 부스팅 (Adaptive Boosting)
+
+	
+![AdaBoost](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=http%3A%2F%2Fcfile26.uf.tistory.com%2Fimage%2F996E3A355B836F8019CC58)
+
+	- 자주 잘못 분류되는 예제에 좀 더 가중치를 주어 Train data에서 분류하기 어려운 예제를
+	- 좀 더 큰 비율로 반복학습하는 weak learner를 생성해서 결론을 뽑는 기법
+		- tree 기반, random forest 와는 달리, tree 들이 독립적으로 존재하진 않음
+		
+> 간단한 약분류기들이 상호보완 하도록 단계적(순차적) 으로 학습시킨다.
+
+![AdaBoost2](https://miro.medium.com/max/875/0*paPv7vXuq4eBHZY7.png)
+
+	- Model1 에서 잘못 예측한 데이터에 가중치 부여
+	- Model2 는 잘못 예측한 데이터를 분류하는데 더 집중
+	- Model3은 Model1,2가 잘못 예측한 데이터를 분류하는데 집중
+	
+	- 3개의 모델별로 계산된 가중치를 합산하여 최종 모델을 생성
+
+- 아다부스트 모델 학습
+
+	1. 각 weak 모델에서 학습할 데이터 선택
+	2. 모든 데이터의 가중치 초기화 (동일한 값)
+	3. 1회 학습 후 예측 오류, 계산, 가중치 계산, 가중치 갱신
+	4. 반복 회수별로 가중치 갱신
+	5. 모든 모델이 위의 단계를 수행할 때 까지 반복
+	
+
+##### 의사결정 스텀프(stump)
+
+
+	- 간단한 의사결정 트리
+	- 하나의 속성에 대한 하나의 의사결정을 만드는 것
+	- 단지 하나의 분할을 가지는 트리이며, 이것이 곳 하나의 스텀프이다.
+	
+	- 역시나 예제를 통해 알아보자.
+	
+	
+```python
+# 에이다 부스트 - 의사결정 스텀프 데이터 생성
+
+from numpy import *
+
+def loadSimpData() :
+    datMat = matrix([[1., 2.1], [2., 1.1], [1.3, 1.], [1., 1.], [2., 1.]])
+    classLabels = [1.0, 1.0, -1.0, -1.0, 1.0]
+    return datMat, classLabels
+
+datMat, classLabels = loadSimpData()
+```
+
+```python
+# 기본 시각화 세팅
+
+xcord0 = []
+xcord1 = []
+ycord0 = []
+ycord1 = []
+
+for i in range(len(classLabels)) :
+    if classLabels[i] == 1.0 :
+        xcord1.append(datMat[i,0]), ycord1.append(datMat[i,1])
+    else :
+        xcord0.append(datMat[i,0]), ycord0.append(datMat[i,1])
+        
+fig = plt.figure(figsize=(10,4))
+ax = fig.add_subplot(111)
+ax.scatter(xcord0, ycord0, marker='s', s=90)
+ax.scatter(xcord1, ycord1, marker='o', s=50, c='red')
+plt.title("Decision Stump Test Data")
+plt.show()
+```
+
+	- 아주 간단한 datMat 이라는 2차원 배열을 만들었다.
+	- 이걸 가지고 의사결정 스텀프를 생성하는 함수를 작성해본다.
+	
+**의사결정 스텀프 생성 함수(의사코드)**
+	
+		- Set the minError to 무한대
+			- 무한대를 위해 minError를 설정
+		- For every feature in the dataset :
+			- 데이터 집합에 있는 모든 속성을 반복
+		-   For every strp : 
+			-   모든 단계를 반복
+		-     For each inequality :
+			-     각각에 대해 부등호를 반복
+		-       Build a decision stump and test it with the weighted dataset
+			-       의사결정 스텀프 구축, 가중치가 부여된 데이터셋 검사
+		-       If the error is less than minError : set this stump as the best stump
+			-       오류가 minError보다 적으면 이 스텀프를 가장 좋은 스텀프로 설정
+		- Return the best stump
+			- 가장 좋은 스텀프 반환
+			
+	
+```python
+def stumpClassify(dataMatrix, dimen, threshVal, threshlneq) :
+    retArray = ones((shape(dataMatrix)[0], 1))
+    
+    # 분류값 부등호에 준하지 못하는 값을 -1로 하나씩 뺀다.
+    if threshlneq == 'It' :
+        retArray[dataMatrix[:, dimen] <= threshVal] = -1.0
+    else :    
+        retArray[dataMatrix[:, dimen] > threshVal] = -1.0
+    return retArray       
+```    
+
+	
+	- 데이터 분류하기 위해 임계 값 비교
+	- 임계 값을 기준으로, 한쪽편에 있는 모든 데이터는 분류 항목을 -1로 처리하고,
+	- 다른 한쪽편에 있는 모든 데이터는 분류항목을 +1로 처리
+	- 즉, 반환할 배열을 모두 1로 설정한 다음, 부등호를 준수하지 못하는 값을 -1로 설정한다.
+	
+
+```python
+def buildStump(dataArr, classLabels, D) :
+    dataMatrix = mat(dataArr)
+    labelMat = mat(classLabels).T
+    m,n = shape(dataMatrix)
+    numSteps = 10.0
+    bestStump = {}
+    bestClasEst = mat(zeros((m, 1)))
+    minError = inf # minError 가 +무한대로 가게 설정
+    
+    for i in range(n) : # 모든 속성 반복
+        rangeMin = dataMatrix[:, i].min()
+        rangeMax = dataMatrix[:, 1].max()
+        stepSize = (rangeMax - rangeMin) / numSteps # 전체 실행 횟수만큼 range 차이를 나누면 가중치 단위가 나옴
+        
+        for j in range(-1, int(numSteps)+1) : # 실행 횟수번까지,
+            for inequal in ['lt', 'gt'] : # less than, greater than 을 각각 나타내고자함
+                threshVal = (rangeMin + float(j) * stepSize) # 각각의 가중치를 최소값에 더하면서 축적해감
+                # stump 분류기를 i, j, lessthan 으로 호출
+                predictedVals = stumpClassify(dataMatrix, i, threshVal, inequal)
+                errArr = mat(ones((m, 1)))
+                errArr[predictedVals == labelMat] = 0
+                weightedError = D.T*errArr # D로 곱해지는 토탈 에러 계산
+                print("split : dim {}, thresh {}, thresh inequal : {}, the weighted error is {}"
+                      .format(i, threshVal, inequal, weightedError))
+                
+                if weightedError < minError : 
+                    minError = weightedError
+                    bestClasEst = predictedVals.copy()
+                    bestStump['dim'] = i
+                    bestStump['thresh'] = threshVal
+                    bestStump['ineq'] = inequal
+    return bestStump, minError, bestClasEst
+```
+
+```python
+D = mat(ones((5,1)) / 5)
+buildStump(datMat, classLabels, D)
+```
+
+	- 실행 결과 :
+	
+			split : dim 0, thresh 0.89, thresh inequal : lt, the weighted error is [[0.6]]
+			
+			split : dim 0, thresh 0.89, thresh inequal : gt, the weighted error is [[0.6]]
+			
+			split : dim 0, thresh 1.0, thresh inequal : lt, the weighted error is [[0.6]]
+			
+			...
+			
+			split : dim 0, thresh 1.6600000000000001, thresh inequal : lt, the weighted error is [[0.8]]
+			split : dim 0, thresh 1.6600000000000001, thresh inequal : gt, the weighted error is [[0.8]]
+			
+			({'dim': 0, 'thresh': 2.1, 'ineq': 'lt'}, matrix([[0.4]]), 
+			
+			array([[1.],
+        			
+				[1.],
+        			
+				[1.],
+        			
+				[1.],
+        			
+				[1.]]))
+				
+	
+	- D에서 가중치를 0.2로 초기화를 한다
+	- Feature 값을 단계별로 증가 시키면서 오류 계산
+	- Feature 0 번째 값이 1.3보다 큰 분류기의 예측오류가 0.2로 제일 낮음
+	- array 값 보면 1,1,1,1,1 이 나왔고 / 최초에 입력한 정답 데이터는 1,1,-1,-1,1 이다
+		- 고로 3,4번째 예측이 틀렸음을 알 수 잇음
+	
+**의사결정 스텀프로 Adaboost 학습 구현 (의사코드)**
+	
+	- For each iteration:
+		- Find the best stump using buildStump()
+			- 가장 좋은 스텀프 찾기
+		- Add the best stump to the stump array
+			- 스텀프 배열에 가장 좋은 스텀프 추가
+		- Calculate alpha
+			- 알파 계산
+		- Calculate the new weight vector -D
+			- 새로운 가중치 벡터 D 계산
+		- Update the aggregate class estimate
+			- 집계된 분류 항목의 추정치를 계산
+		- If the error rate == 0.0 : break out of the for loop
+			- 오류율이 0.0이면 반복문 종료
+			
+			
+	- 이걸 여러번 돌리면 에이다 부스팅이 된다.
+	- 함 해보자!
+	
+	
+```python
+# 의사결정 스텀프로 에이다부스트 학습 구현
+
+def adaBoostTrainDS(dataArr, classLabels, numlt=40) :
+    weakClassArr = []
+    m = shape(dataArr)[0]
+    D = mat(ones((m, 1)) / m)  # D를 전부 동일하게 초기화함
+    aggClassEst = mat(zeros((m, 1)))
+    
+    for i in range(numlt) :
+        bestStump, error, classEst = buildStump(dataArr, classLabels, D)
+        print("D : {}".format(D.T))
+        # calc alpha, throw in max(error, eps) to account for error = 0
+        alpha = float(0.5 * log((1.0 - error) / max(error, 1e-16)))
+        bestStump['alpha'] = alpha
+        weakClassArr.append(bestStump) # stump params 를 배열에 저장
+        print("classEst : {}".format(classEst.T))
+        # exponent for 0 calc, getting messy
+        expon = multiply(-1 * alpha * mat(classLabels).T, classEst)
+        D = multiply(D, exp(expon)) # calc new  for next iteration
+        D = D / D.sum()
+        
+        # calc training error of all classifiers
+        # if this is 0, quit for loop early (use break)
+        aggClassEst += alpha * classEst
+        print("aggClassEst : {}".format(aggClassEst.T))
+        aggErrors = multiply(sign(aggClassEst) != mat(classLabels).T, ones((m, 1)))
+        errorRate = aggErrors.sum() / m
+        print("Total Error : {}".format(errorRate))
+        
+        if errorRate == 0.0 : break
+    return weakClassArr
+```
+
+```python
+adaBoostTrainDS(datMat, classLabels, 9)
+```
+
+	- 실행 결과 : 
+	
+			split : dim 0, thresh 0.89, thresh inequal : lt, the weighted error is [[0.6]]
+			
+			split : dim 0, thresh 0.89, thresh inequal : gt, the weighted error is [[0.6]]
+			
+			...
+			
+			D : [[0.2 0.2 0.2 0.2 0.2]]
+			
+			classEst : [[1. 1. 1. 1. 1.]]
+			
+			aggClassEst : [[0.20273255 0.20273255 0.20273255 0.20273255 0.20273255]]
+			
+			Total Error : 0.4
+			
+			...
+			
+			[{'dim': 0, 'thresh': 2.1, 'ineq': 'lt', 'alpha': 0.2027325540540821},
+ 			
+			{'dim': 0, 'thresh': 2.1, 'ineq': 'lt', 'alpha': 1.1102230246251564e-16},
+ 			
+			{'dim': 0, 'thresh': 0.89, 'ineq': 'lt', 'alpha': 0.0},
+ 			
+			{'dim': 0, 'thresh': 0.89, 'ineq': 'lt', 'alpha': 0.0},
+			
+			
+	- 실행 결과가 여러번 나오는데, 이게 각 학습결과를 나타낸다. (여러번 학습시킨다는 것을 의미함)
+	- ipynb 참조하면 각 실행값 결과들이 나옴.
+		- 첫번째에서 classEnt : 1,1,1,1,1 (여전히 틀리다)
+		- 가중치 값이 0.20 부여
+		- 두번째에서 classEnt : 1,1,1,1,1 (여전히 틀리다)
+		- 가중치 값이 1.11 부여
+		- .....
+			- 이런식으로 이전 학습에서 틀린 데이터에 가중치를 추가하면서 모델의 정확도 향상
+			
+
+```python
+def adaClassify(datToClass, classifierArr) :
+    # do stuff similar to last aggClassEst in adaBoostTrainDS
+    dataMatrix = mat(datToClass)
+    m - shape(dataMatrix)[0]
+    aggClassEst = mat(zeros((m, 1)))
+    
+    for i in range(len(classifierArr)) : 
+        classEst = stumpClassify(dataMatrix, classifierArr[i]['dim'],
+                                classifierArr[i]['thresh'],
+                                classifierArr[i]['ineq'])
+        aggClassEst += classifierArr[i]['alpha'] * classEst
+        print(aggClassEst)
+    return sign(aggClassEst) # sign 함수 : -1 or 1로 변환
+
+classifierArr = adaBoostTrainDS(datMat, classLabels, 30)
+
+adaClassify([0,0], classifierArr)
+```
