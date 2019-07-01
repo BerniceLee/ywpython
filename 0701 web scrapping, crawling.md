@@ -818,13 +818,298 @@ download =  https://docs.python.org/3.5/_static/pydoctheme.css
 ```
 
 
+## 고급 스크래핑
 
 
+### 로그인이 필요한 사이트에서 다운받기
+
+#### HTTP 통신
+
+- 브라우저 -> 서버 (request), 서버 -> 브라우저 (response)
+- 같은 URL에 여러번 접근해도 같은 데이터를 돌려주는 stateless 통신
 
 
+#### 쿠키
+
+- 1개의 쿠키에 저장할 수 있는 데이터 크기는 4096byte 로 제한
+- HTTP 통신 헤더를 통해 읽고 쓰기 가능
+- 방문자 또는 확인자 측에서 원하는 대로 변경가능
+- 변경하면 문제가 될 비밀번호 등의 정보를 저장하기는 맞지 않음
 
 
+#### 세션
 
+- 쿠키를 사용해 데이터 저장
+- 쿠키에는 방문자 고유 ID만 저장하고, 모든 데이터는 웹 서버에 저장
+- 저장할 수 있는 데이터에 제한없음
+
+#### requests 사용
+
+- urllib.request를 통해 쿠키를 이용한 접근이 가능
+- 로그인 보안이 빡센데는 이거로 불가
+
+
+#### 예시를 통해 살펴보자
+
+한빛출판네트워크의 자료를 기반으로
+
+http://www.hanbit.co.kr/member/login.html
+
+
+- 입력 양식으로 m_id와 m_passwd 라는 값(name 속성)을 입력하여 입력양식을 제출하면 로그인 되는 구조
+
+**로그인 과정 분석**
+
+- 개발자 도구에서 login_proc.php 까보면 (로그인을 하면 나온다)
+	- 나는 아이디가 없으니까 그냥 로그인 했다 가정하면
+- login_proc.php 는 POST 형식으로 m_id, m_passwd 값을 받아서 로그인 처리를 함
+
+
+파이썬에서 로그인을 해보자.
+
+
+```python
+# 파이썬으로 로그인하기
+
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+
+# Id, pw 저장
+USER = "<ID>"
+PASS = "<Password>"
+
+# 세션 시작하기
+session = requests.session()
+
+# 로그인하기 : JSON 형식으로 POST 로 보내기
+login_info = {
+    "m_id" : USER,
+    "m_passwd" : PASS
+}
+url_login = "http://www.hanbit.co.kr/member/login_proc.php"
+res = session.post(url_login, data=login_info)
+res.raise_for_status() # 오류가 발생하면 예외 발생
+
+# 마이페이지 접근
+url_mypage = "http://www.hanbit.co.kr/myhanbit/myhanbit.html"
+res = session.get(url_mypage)
+res.raise_for_status()
+
+# 마일리지와 이코인 가져오기
+soup = BeautifulSoup(res.text, "html.parser")
+mileage = soup.select_one(".mileage_section1 span").get_text()
+ecoin = soup.select_one(".mileage_section2 span").get_text()
+print("마일리지 : {}".format(mileage))
+print("이코인 : {}".format(ecoin))
+```
+
+```python
+"""
+실행 결과 : 
+
+마일리지 : 2,000
+이코인 : 0
+"""
+```
+
+```python
+# 마이페이지에 접근하기
+url_mypage = "http://www.hanbit.co.kr/myhanbit/membership.html"
+res = session.get(url_mypage)
+res.raise_for_status()
+
+# 날짜별 순수 구매금액과 적립마일리지 가져오기
+soup = BeautifulSoup(res.text, "html.parser")
+date = soup.select_one("table.tbl_type_list2 tr td").get_text()
+buy = soup.select_one("table.tbl_type_list2 tr td.right").get_text()
+month_mileage = soup.select_one("table.tbl_type_list2 tr td:nth-of-type(4)").get_text()
+
+print("날짜 : {}".format(date))
+print("순수구매날짜 : {}".format(buy))
+print("적립마일리지 : {}".format(month_mileage))
+```
+
+```python
+"""
+실행 결과 : 
+
+날짜 : 2019 / 07
+순수구매날짜 : 0 원
+적립마일리지 : 0 점
+"""
+```
+
+
+**request 에서의 메소드**
+
+
+HTTP에서 사용하는 GET, POST 등의 메소드는 requests 모듈에 같은 이름의 메소드가 존재한다.
+
+
+```python
+# GET, POST, PIT, DELETE, HEAD 요청
+
+# GET
+r = requests.get("http://google.co.kr")
+print(r.text, "\n")
+
+# POST
+formdata = {"key1" : "value1", "key2" : "value2"}
+r = requests.post("http://example.com", data=formdata)
+print(r.content)
+
+# PUT, DELETE, HEAD 등..
+r = requests.put("http://httpbin.org/put")
+r = requests.delete("http://httpbin.org/delete")
+r = requests.head("http://httpbin.org/get")
+```
+
+
+현재 시간에 대한 데이터를 추출하고 텍스트 형식 / 바이너리 형식으로 출력하기
+
+
+```python
+# 현재 시간에 대한 데이터를 추출하고, 텍스트 형식과 바이너리 형식으로 출력해보자.
+
+r = requests.get("http://api.aoikujira.com/time/get.php")
+
+# 텍스트 형식으로 데이터 추출하기
+text = r.text
+print(text)
+
+# 바이너리 형식으로 데이터 추출하기
+bin = r.content
+print(bin)
+```
+
+```python
+"""
+실행 결과 : 
+
+2019/07/01 17:02:46
+b'2019/07/01 17:02:46'
+"""
+```
+
+
+### 웹 API로 데이터 추출하기
+
+
+**API(Application Programming Interface)**
+
+
+- 어떤 사이트가 가지고 있는 기능을 외부에서도 쉽게 사용할 수 있게 정의한 것
+- 원래 어떤 프로그램 기능을 외부 프로그램에서 호출해서 사용할 수 있게 만든 것
+- HTTP 통신을 사용하여 클라이언트가 서버에 HTTP 요청을 보내면, 서버가 XML, JSON 등으로 응답
+
+ 
+**OpenWeatherMap 의 데이터로 날씨 정보를 뽑아보자.** 
+
+http://openweathermap.org 
+
+여기서 개발자 등록하고 API key 발급받자.  (5 day 3 hour forecast API로 받음)
+
+
+```python
+# API로 날씨 정보 추출하기
+
+import requests
+import json
+
+# API KEY
+apikey = "d63d702258c3cde7193d0e46ab938063"
+
+# 날씨를 확인할 도시 지정하기
+cities = ["Seoul,KR", "Bangkok,TH", "Berlin,DE"]
+
+# API 지정
+api = "http://api.openweathermap.org/data/2.5/weather?q={city}&APPID={key}"
+
+# 캘빈 > 섭씨
+k2c = lambda k : k - 273.15
+
+# 각 도시정보 추출
+for name in cities:
+    # API의 url 구성
+    url = api.format(city=name, key=apikey)
+    # API에 요청을 보내 데이터 추출
+    r = requests.get(url)
+    print(r.text)
+    # 결과를 json형식으로 변환
+    data=json.loads(r.text)
+      
+    # 결과출력
+    print("+도시=", data["name"])
+    print("|날씨=", data["weather"][0]["description"])
+    print("|최저기온=", k2c(data["main"]["temp_min"]))
+    print("|최고기온=", k2c(data["main"]["temp_max"]))
+    print("|습도=", data["main"]["humidity"])
+    print("|기압=", data["main"]["pressure"])
+    print("|풍향=", data["wind"]["deg"])
+    print("|풍속=", data["wind"]["speed"])
+    print("")   
+```
+
+```python
+"""
+실행 결과 : 
+
+{"coord":{"lon":126.98,"lat":37.57},"weather":[{"id":721,"main":"Haze","description":"haze","icon":"50d"}],"base":"stations","main":{"temp":301.05,"pressure":1006,"humidity":51,"temp_min":300.15,"temp_max":302.15},"visibility":10000,"wind":{"speed":2.1,"deg":250,"gust":6.7},"clouds":{"all":40},"dt":1561970213,"sys":{"type":1,"id":5504,"message":0.0072,"country":"KR","sunrise":1561925640,"sunset":1561978638},"timezone":32400,"id":1835848,"name":"Seoul","cod":200}
++도시= Seoul
+|날씨= haze
+|최저기온= 27.0
+|최고기온= 29.0
+|습도= 51
+|기압= 1006
+|풍향= 250
+|풍속= 2.1
+
+{"coord":{"lon":100.49,"lat":13.75},"weather":[{"id":521,"main":"Rain","description":"shower rain","icon":"09d"}],"base":"stations","main":{"temp":304.64,"pressure":1005,"humidity":66,"temp_min":304.15,"temp_max":305.15},"visibility":10000,"wind":{"speed":4.1,"deg":240},"clouds":{"all":40},"dt":1561970329,"sys":{"type":1,"id":9235,"message":0.0068,"country":"TH","sunrise":1561935232,"sunset":1561981763},"timezone":25200,"id":1609350,"name":"Bangkok","cod":200}
++도시= Bangkok
+|날씨= shower rain
+|최저기온= 31.0
+|최고기온= 32.0
+|습도= 66
+|기압= 1005
+|풍향= 240
+|풍속= 4.1
+
+{"coord":{"lon":13.39,"lat":52.52},"weather":[{"id":800,"main":"Clear","description":"clear sky","icon":"01d"}],"base":"stations","main":{"temp":295.89,"pressure":1015,"humidity":52,"temp_min":294.15,"temp_max":298.15},"visibility":10000,"wind":{"speed":4.6,"deg":260},"clouds":{"all":0},"dt":1561970126,"sys":{"type":1,"id":1262,"message":0.0083,"country":"DE","sunrise":1561949246,"sunset":1562009562},"timezone":7200,"id":2950159,"name":"Berlin","cod":200}
++도시= Berlin
+|날씨= clear sky
+|최저기온= 21.0
+|최고기온= 25.0
+|습도= 52
+|기압= 1015
+|풍향= 260
+|풍속= 4.6
+
+"""
+```
+
+
+JSON 값에 key : value 들이 쭉 나와있는데, 이 중 원하는 값만 추출해서 써도 된다.
+
+
+**다른 활용 가능한 API들**
+
+
+- 국내 웹 API
+API Store : https://www.apistore.co.kr/main.do
+
+- 포탈 사이트(네이버 개발자 센터 / 다음 개발자 센터)
+https://developers.naver.com/main/
+
+https://developers.daum.net/
+
+- 쇼핑 정보(옥션)
+http://developer.auction.co.kr/
+
+- 주소전환(행정자치부, 우체국)
+http://www.juso.go.kr/openindexPage.do
+
+https://biz.epost.go.kr/ui/index.jsp
 
 
 
