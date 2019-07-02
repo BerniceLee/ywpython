@@ -1113,3 +1113,252 @@ https://biz.epost.go.kr/ui/index.jsp
 
 
 
+## 데이터 소스의 서식과 가공
+
+### 웹의 다양한 데이터 형식
+
+
+**텍스트 데이터와 바이너리 데이터**
+
+- 텍스트 데이터는 일반적으로 텍스트 에디터로 편집할 수 있는 데이터 포맷
+- 텍스트 데이터 이외의 데이터를 바이너리 데이터라고 함
+	- 바이너리는 문자와 상관 없이, 데이터를 사용할 수 있는 데이터 영역을 활용하는 데이터 형식
+	- 동영상, 이미지들은 대부분 바이너리 데이터
+
+**XML(Extensible Markup Language) 분석**
+
+- 텍스트 데이터를 기반으로 하며, 범용적인 형식으로 널리 사용
+- 특정 목적에 따라 태그로 감싸 마크업
+- 데이터를 계층구조로 표현한다.
+
+> <요소 속성 = "값" > 내용 </요소>
+
+기본 구조는 이런식이다.
+
+```xml
+<products type="전자제품">
+	<product id="S001" price="45000>SD카드</product>
+	<product id="S002" price="32000>마우스</product>
+</products>
+```
+	
+
+http://www.kma.go.kr/weather/forecast/mid-term-rss3.jsp?stnId=108
+
+해당 XML을 분석해보자.
+
+
+```python
+# XML 분석
+
+from bs4 import BeautifulSoup
+import urllib.request as req
+import os.path
+
+url = "http://www.kma.go.kr/weather/forecast/mid-term-rss3.jsp?stnId=108"
+savename = "forecast.xml"
+if not os.path.exists(savename) :
+    req.urlretrieve(url, savename)
+    
+xml = open(savename, "r", encoding="utf-8").read()
+soup = BeautifulSoup(xml, "html.parser")
+
+# 각 지역 확인하기
+info = {}
+for location in soup.find_all("location") :
+    name = location.find("city").string
+    weather = location.find("wf").string
+    if not weather in info :
+        info[weather] = []
+    info[weather].append(name)
+    
+# 각 지역의 날씨를 구분해서 출력하기
+for weather in info.keys() :
+    print("r", weather)
+    for name in info[weather] :
+        print("| -", name)
+```
+
+```python
+"""
+실행 결과 : 
+
+r 맑음
+| - 서울
+| - 인천
+| - 수원
+| - 파주
+| - 이천
+| - 평택
+| - 춘천
+| - 원주
+| - 강릉
+| - 대전
+| - 세종
+| - 홍성
+| - 청주
+| - 충주
+| - 영동
+| - 광주
+| - 목포
+| - 여수
+| - 순천
+| - 광양
+| - 나주
+| - 전주
+| - 군산
+| - 정읍
+| - 남원
+| - 고창
+| - 무주
+| - 부산
+| - 울산
+| - 창원
+| - 진주
+| - 거창
+| - 통영
+| - 대구
+| - 안동
+| - 포항
+| - 경주
+| - 울진
+| - 울릉도
+r 구름많음
+| - 제주
+| - 서귀포
+
+"""
+```
+
+
+**JSON 분석**
+
+
+- 자바스크립트 전용 데이터 형식은 아니며, 프로그래밍 언어끼리 데이터를 교환할 때 사용
+- JSON의 배열은 파이썬의 리스트, 파이썬의 딕셔너리와 동일
+
+
+```python
+# JSON 파일 분석
+
+import urllib.request as req
+import os.path, random
+import json
+
+url = "https://api.github.com/repositories"
+savename = "repo.json"
+if not os.path.exists(savename) :
+    req.urlretrieve(url, savename)
+
+# JSON 파일 불러오기    
+items = json.load(open(savename, "r", encoding="utf-8"))
+# 이렇게 써도 된다.
+# s = open(savename, "r", encoding="utf-8").read()
+# itmes = json.loads(s)
+
+for item in items :
+    print(item["name"] + " - " + item["owner"]["login"])
+```
+
+
+**엑셀 파일 분석**
+
+
+- openpyxl 패키지를 이용한다.
+
+http://www.index.go.kr/potal/main/EachDtlPageDetail.do?idx_cd=1041
+
+http://www.index.go.kr/strata/jsp/downloadStblGams2.jsp
+
+
+```python
+# 엑셀 파일 분석
+
+import openpyxl
+
+filename = "C:/Users/Affinity/Downloads/module4/ch01/stats_104102.xlsx"
+book = openpyxl.load_workbook(filename)
+
+# 맨 앞의 시트 추출
+sheet = book.worksheets[0]
+
+# 시트의 각 행을 순서대로 추출하기
+data = []
+for row in sheet.rows :
+    data.append([
+        row[0].value,
+        row[9].value
+    ])
+    
+# 필요없는 줄(헤더, 연도, 계) 제거
+del data[0]
+del data[1]
+del data[2]
+
+# 데이터를 인구 순서대로 정렬
+data = sorted(data, key=lambda x : x[1])
+
+# 하위 5위를 출력
+for i, a in enumerate(data) :
+    if (i >= 5) : break
+    print(i+1, a[0], int(a[1]))    
+```
+
+```python
+"""
+실행 결과 : 
+
+1 세종 280
+2 제주 657
+3 울산 1165
+4 광주 1463
+5 대전 1502
+"""
+```
+
+```python
+import openpyxl
+
+filename = "C:/Users/Affinity/Downloads/module4/ch01/stats_104102.xlsx"
+book = openpyxl.load_workbook(filename)
+
+# 활성화된 시트 추출하기
+sheet = book.active
+
+# 서울을 제외한 인구를 구해서 쓰기
+for i in range(0, 9) :
+    total = int(sheet[str(chr(i + 66)) + "3"].value)
+    seoul = int(sheet[str(chr(i + 66)) + "4"].value)
+    output = total - seoul
+    print("서울 제외 인구 = " ,output)
+    # 쓰기
+    sheet[str(chr(i + 66)) + "21"] = output
+    cell = sheet[str(chr(i + 66)) + "21"]
+    
+    # 폰트와 색상 변경
+    cell.font = openpyxl.styles.Font(size=14, color="FF0000")
+    cell.number_format = cell.number_format
+    
+# 엑셀 파일 저장하기
+filename = "C:/Users/Affinity/Downloads/module4/ch01/popluation2.xlsx"
+book.save(filename)
+print("ok")
+```
+
+```python
+"""
+실행 결과 : 
+
+서울 제외 인구 =  39565
+서울 제외 인구 =  40203
+서울 제외 인구 =  40484
+서울 제외 인구 =  40753
+서울 제외 인구 =  40997
+서울 제외 인구 =  41225
+서울 제외 인구 =  41507
+서울 제외 인구 =  41766
+서울 제외 인구 =  41921
+ok
+"""
+```
+
