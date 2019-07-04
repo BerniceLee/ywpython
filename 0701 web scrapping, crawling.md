@@ -1362,3 +1362,18 @@ ok
 """
 ```
 
+pandas 를 통해 엑셀파일을 읽고 쓸 수 있다.
+
+
+```python
+# 판다스로 엑셀파일 읽고쓰기
+
+import pandas as pd
+
+filename = "C:/Users/Affinity/Downloads/module4/ch01/stats_104102.xlsx"
+sheet_name = "stats_104102"
+book = pd.read_excel(filename, sheetname = sheet_name, header=1)
+
+book = book.sort_values(by=2015, ascending=False)
+book
+```
