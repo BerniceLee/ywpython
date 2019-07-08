@@ -18,6 +18,11 @@
 * 지도학습, 비지도학습에 대한 개요 및 실습
 * 1차 수행평가
 
-0701-
+0701-0705
 * data_mining
 * 빅데이터의 수집과 저장
+* BeautifulSoup, KoNLPy 등을 이용한 스크래핑, 크롤링
+
+0708-
+* basic_deeplearning
+* 딥러닝 개요
