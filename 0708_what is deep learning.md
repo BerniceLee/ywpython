@@ -235,10 +235,70 @@ ImportError: Could not find 'cudart64_100.dll'. TensorFlow requires that this DL
 [퍼셉트론을 이용한 기본 논리구조 연산](https://needjarvis.tistory.com/181)
 
 
-> AND 게이트 같은 선형 논리는 계산이 가능한데, XOR 같은 비선형 논리는 풀이가 불가
+논리회로 문제를 퍼셉트론으로 풀기 위해서는 간단한 Perception Rule 하나를 먼저 알고 있어야한다.
+
+> Prediction (y`) = 1 if Wx+b >= 0 and 0 if Wx+b<0
+
+이걸 활용해서 각 논리게이트를 풀어보자.
 
 
+**AND GATE**
 
+
+![AND GATE](https://miro.medium.com/max/374/0*9QQhdtqhL6H2yMJ4.gif)
+
+- w1x1 + w2x2 + b 에서 w1,w2를 1로 놓고, b를 -1로 놓고 계산해보자
+> x1(1)+x2(1)-1
+- AND GATE의 첫번째줄 x1=0, x2=0 을 통과시킬땐
+> 0+0-1 = -1
+- 위에 Perception Rule 에서 Wx + b < 0 이면 y' 예측값이 0이니깐 이 가정은 맞는가정
+- x1=0, x2=1 을 넣어보면
+> 0+1-1 = 0
+- Perception Rule 에서, Wx + b >= 0 이면 y' 예측값이 1이여야 하는데 0이 나왔으니깐 이건 틀린 가정
+- 그럼 이번에는 x1=0, x2=1, b=-1.5를 넣어보자.
+> 0+1-1.5 = -0.5
+- bias 값을 바꾸니깐 맞는말이됨. 이 b 값으로 게속 간다.
+- x1=1, x2=1 을 넣어보면
+> 1+1-1.5 = 0.5
+- 이것도 맞는말
+
+그래서 정리하면 퍼셉트론으로 AND 게이트의 수식을 구해본다면
+
+> x1+x2-1.5
+
+가 된다.
+
+
+같은 원리로 OR 게이트도 접근이 가능하다.
+
+
+**OR GATE**
+
+
+![OR GATE](https://miro.medium.com/max/376/0*Ul09ZJh9XpWoE3dQ.gif)
+
+- w1x1 + w2x2 + b 에서 w1,w2를 1로 놓고, b를 -1로 놓고 계산해보자
+> x1(1)+x2(1)-1
+- OR GATE의 첫번째줄 x1=0, x2=0 을 통과시킬땐
+> 0+0-1 = -1
+- 위에 Perception Rule 에서 Wx + b < 0 이면 y' 예측값이 0이니깐 이 가정은 맞는가정
+- x1=0, x2=1 을 넣어보면
+> 0+1-1 = 0
+- Perception Rule 에서, Wx + b >= 0 이면 y' 예측값이 1. 고로 맞는가정
+- x1=1, x2=1 을 넣어보면
+> 1+1-1 = 1
+- Perception Rule 에 의해 이것도 맞는말이다.
+
+그래서 정리하면 퍼셉트론으로 AND 게이트의 수식을 구해본다면
+
+> x1+x2-1
+
+가 된다.
+
+
+AND,OR 게이트는 선형논리라서 1차원적 퍼셉트론으로도 연산이 가능하지만, NAND, XOR 처럼 비선형논리 같은 경우에는 1겹 퍼셉트론으로는 연산이 어렵다.
+
+> 그런 경우에는 퍼셉트론을 여러개 쓰면 해결이 된다.
   
   
   
