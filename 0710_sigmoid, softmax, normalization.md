@@ -76,7 +76,24 @@ Epoch 1000/1000
 ```
 
 
+코드 초반부에 set_random_seed() 달아주자.
+
+
+> set_random_seed 로 난수픽을 잡아줘도 SGD가 랜덤으로 샘플을 추출하는 경사하강이니까 결국 무쓸모 아닐까?
+
+
+이걸 질문하니 다음과 같은 답변을 해주심
+
+- SGD가 EGD랑 다르게, 랜덤으로 샘플을 추출해서 쓰는 경사하강인건 맞는데,
+- SGD 또한 numpy의 난수를 참조를 한다.
+- 따라서, set_random_seed 로 **numpy의 난수** 값을 잡아주면,
+- SGD 에서 랜덤으로 뽑아내는 샘플값의 "절댓값" 도 동일한 값으로 추출되게 된다.
+- 따라서 seed 를 잡아주면 몇 번을 실행해도 추출하는 샘플값은 고정이 된다.
+
+
+
 ## Softmax
+
 
 
 Multinomial Regression 이라서, cost 는 categorical_crossentropy 로 적용시킴
@@ -176,6 +193,14 @@ Epoch 1000/1000
 Prediction 값은 각 array 샘플마다 2와 1이 출력된다. (잘 예측된거임)
 
 
+> 왜 2랑 1이 예측된건지?
+
+- 샘플은 각각 1번째, 6번째 샘플을 차용한건데
+- 1번째 샘플의 one-hot-encoding 된 정답값은 0,0,1 이고, 정답인 1의 인덱스 값은 2
+- 마찬가지로 6번째 샘플의 one-hot-encoding 된 정답값은 0,1,0 이고, 정답인 1의 인덱스 값은 1
+
+
+
 ## 데이터 전처리를 위한 개념
 
 
@@ -244,7 +269,7 @@ Prediction 값은 각 array 샘플마다 2와 1이 출력된다. (잘 예측된�
 
 3. 목적함수
 
-![https://postfiles.pstatic.net/MjAxODEwMjdfMjM1/MDAxNTQwNjQxMzQ3NDU2.cpPY6GJ0oeJLiz4h_Xs3pKVuv5V5f32aHSfbfX_rsEgg.a2QE606kUdtjPVt2JBlbpB4ZtgQST06b1dZN9KqOnSkg.PNG.qbxlvnf11/20181027_205532.png?type=w773)
+![organized function](https://postfiles.pstatic.net/MjAxODEwMjdfMjM1/MDAxNTQwNjQxMzQ3NDU2.cpPY6GJ0oeJLiz4h_Xs3pKVuv5V5f32aHSfbfX_rsEgg.a2QE606kUdtjPVt2JBlbpB4ZtgQST06b1dZN9KqOnSkg.PNG.qbxlvnf11/20181027_205532.png?type=w773)
 
 
 모델에 우리가 가장 일반적으로 사용하는 용어.
@@ -508,7 +533,7 @@ RMSProp 을 이해하려면, 아다그라드를 먼저 이해해야하는데,
 
 위에서 언급한 K-fold validation 을 써서 모델을 학습시켜볼거임
 
-여기서 k는 4 정도로 두자
+여기서 k는 4 정도로 두고, epoch는 100 정도로 두고 한번 돌려보자.
 
 
 ```python
@@ -612,3 +637,233 @@ print(all_mae_histories)
 '''
 ```
 
+```python
+print(all_scores)
+mean = np.mean(all_scores)
+stddev = np.std(all_scores)
+
+print(u'%.2f \u00B1(%.2f)'%(mean, stddev))
+
+'''
+[2.2316887, 2.6087942, 2.6762898, 2.389614]
+2.48 ±(0.18)
+'''
+```
+
+```python
+# 4-fold의 평균 validation MAE 그래프 그리기
+
+print(model.metrics_names)
+
+'''
+['loss', 'mean_absolute_error']
+'''
+```
+
+
+
+근데 이거는 epoch 가 100일때의 가정이라서 잘 뽑힌거고,
+일부러 overfitting 되는 상황을 만들어서 한번 출력해보자.
+
+내 생각엔 epoch 를 500까지 안둬도 될 것 같고, 지금 100때의 MAE 값들 나오는거 보면 대충 250 정도만 해도 충분히 Overfitting 될 것 같음... (강사님 의견도 동일해서, 예제랑 다르게 그냥 epoch 를 250으로 돌려봄)
+
+
+
+```python
+k = 4
+num_val_samples = len(train_data) // k
+num_epochs = 250
+all_mae_histories = []
+
+for i in range(k):
+    print('>> fold ', i)
+    val_data = train_data[i * num_val_samples: (i+1) * num_val_samples]
+    val_targets = train_targets[i * num_val_samples: (i+1) * num_val_samples]
+    
+    partial_train_data = np.concatenate([train_data[:i*num_val_samples],
+                                         train_data[(i+1) * num_val_samples:]],
+                                        axis=0)
+    partial_train_targets = np.concatenate([train_targets[:i*num_val_samples],
+                                            train_targets[(i+1) * num_val_samples:]],
+                                           axis=0)
+    
+    model = build_model()
+    hist = model.fit(partial_train_data, 
+                     partial_train_targets,
+                     epochs = num_epochs,
+                     batch_size = 1,
+                     verbose = 0,
+                     validation_data = (val_data, val_targets))
+    
+    mae_history = hist.history['val_mean_absolute_error']
+    all_mae_histories.append(mae_history)
+    
+print('finished!!')
+```
+
+학습이 끝나면, 과적합 상황을 시각화해서 한번 뽑아보자.
+(mae 값들을 print 하는건 너무 많고 내가 귀찮으니 걍 생략함)
+
+
+```python
+average_mae_history = [
+    np.mean([x[i] for x in all_mae_histories]) for i in range(num_epochs)]
+```
+
+```python
+average_mae_history = []
+for epoch in range(num_epochs):
+    average_mae_per_epoch = []
+    
+    for mae_history in all_mae_histories: # 4개 fold 반복
+        average_mae_per_epoch.append(mae_history[epoch])
+    
+    mean = np.mean(average_mae_per_epoch)
+    average_mae_history.append(mean) 
+```    
+
+둘이 같은 표현이다.
+
+그래서 시각화를 시키면,
+
+```python
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+plt.plot(range(1, len(average_mae_history) + 1), average_mae_history)
+plt.xlabel('Epochs')
+plt.ylabel('Validation MAE')
+plt.show()
+```
+
+(실행결과는 여기를 참고하자)
+[강사님 깃](https://github.com/tjrjsgk/temp/blob/master/6_regression(boston%20housing).ipynb)
+
+
+(강사님 깃은 epoch 500 기준이니깐 그래프가 나랑 좀 다르게 나타날것)
+
+그니깐... Epoch 가 일정수준이 넘어가면.... Overfit 된걸 볼 수 있음
+
+여기에 아까 위에서 언급한 지수 이동 평균 필터링을 적용해본다.
+
+
+
+#### 지수 이동 평균 (EMA, Exponential Moving Averge)
+
+
+
+간단하게 다시 짚으면, 평균을 구할때 시간이라는 개념이 추가됨.
+
+지수 이동 평균은, 최근에 높은 가중치를 주지만 *오래된 과거도 비록 낮은 영향력이지만 가중치를 두여하도록* 고려한 방법.
+
+이제 코드에 적용해보자.
+
+
+
+```python
+'''
+시계열 신호에 지수 이동 평균(exponential moving averge) 필터링
+'''
+def smooth_curve(points, factor=0.9):
+    smoothed_points = []
+    for point in points:
+        if smoothed_points:
+            prev = smoothed_points[-1]
+            smoothed_points.append(prev*factor + point*(1-factor))
+        else:
+            smoothed_points.append(point)
+    
+    return smoothed_points
+
+smooth_mae_history = smooth_curve(average_mae_history[10:])
+
+plt.plot(range(1, len(smooth_mae_history) + 1), smooth_mae_history)
+plt.xlabel('Epochs')
+plt.ylabel('Validation MAE')
+plt.show()
+```
+
+
+이걸 적용시키면 아까랑 다른 플롯 와꾸가 나옴.
+(좀 더 그럴듯하고 간지나보임)
+
+
+
+**5. (과대적합 되기 전까지) 모델 학습**
+
+
+새로운 모델 객체를 생성해서 과적합 전까지 재학습을 시켜봅시다....
+
+plot 뽑아본거 보면, epoch 가 대충 눈대중으로 80정도면 과적합 ㄴㄴ
+
+
+```python
+# 기존 model 객체를 사용하면 이어서 학습되므로, 새로운 model 객체를 생성함
+model = build_model()
+model.fit(train_data, 
+          train_targets,
+          epochs = 80,
+          batch_size = 16,
+          verbose = 1)
+```
+
+```python
+'''
+Epoch 1/80
+404/404 [==============================] - 0s 654us/sample - loss: 498.5625 - mean_absolute_error: 20.3979
+Epoch 2/80
+404/404 [==============================] - 0s 252us/sample - loss: 338.1196 - mean_absolute_error: 16.1996
+Epoch 3/80
+404/404 [==============================] - 0s 240us/sample - loss: 170.0173 - mean_absolute_error: 10.6090
+Epoch 4/80
+404/404 [==============================] - 0s 239us/sample - loss: 71.5559 - mean_absolute_error: 6.3844
+Epoch 5/80
+404/404 [==============================] - 0s 238us/sample - loss: 42.0920 - mean_absolute_error: 4.7063
+  ...
+Epoch 76/80
+404/404 [==============================] - 0s 190us/sample - loss: 6.1969 - mean_absolute_error: 1.7329
+Epoch 77/80
+404/404 [==============================] - 0s 195us/sample - loss: 6.1915 - mean_absolute_error: 1.6974
+Epoch 78/80
+404/404 [==============================] - 0s 197us/sample - loss: 6.0633 - mean_absolute_error: 1.6931
+Epoch 79/80
+404/404 [==============================] - 0s 195us/sample - loss: 5.8208 - mean_absolute_error: 1.6877
+Epoch 80/80
+404/404 [==============================] - 0s 195us/sample - loss: 5.9284 - mean_absolute_error: 1.6594
+
+<tensorflow.python.keras.callbacks.History at 0x23e79f51eb8>  
+'''
+```
+
+loss: 5.9284 - mean_absolute_error: 1.6594
+
+이 정도면 대충 성공적인듯.
+
+
+
+**6. 테스트셋으로 성능 평가하기**
+
+
+
+```python
+test_mse_score, test_mae_score = model.evaluate(test_data, test_targets)
+print('test MSE score: %.3f', test_mse_score)
+print('test MAE score: %.3f', test_mae_score)
+```
+
+```python
+'''
+
+102/102 [==============================] - 0s 978us/sample - loss: 17.6753 - mean_absolute_error: 2.7005
+test MSE score: %.3f 17.675254821777344
+test MAE score: %.3f 2.7004523
+'''
+```
+
+
+MSE는 대충 17.6, MAE는 대충 2.7 정도 나온다.
+
+이 정도면 좋은 예측이라고 볼 수 있음.
+
+
+> 이런 식으로, MAE 값을 계속 비교해 나가면서 k 값도 적당하게 쪼개보고, 적합한 수준의 성능평가 수준을 찾으면 된다.
